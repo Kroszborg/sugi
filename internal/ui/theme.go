@@ -2,23 +2,29 @@ package ui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Color palette
+// ── Color Palette (Catppuccin Mocha + enhancements) ───────────────────────────
 const (
-	ColorBase    = lipgloss.Color("#1e1e2e") // dark background
-	ColorSurface = lipgloss.Color("#313244")
-	ColorOverlay = lipgloss.Color("#45475a")
-	ColorMuted   = lipgloss.Color("#585b70")
-	ColorText    = lipgloss.Color("#cdd6f4")
-	ColorSubtext = lipgloss.Color("#a6adc8")
+	// Backgrounds
+	ColorBase    = lipgloss.Color("#11111b") // darkest — main bg
+	ColorMantle  = lipgloss.Color("#181825") // header/footer bar
+	ColorCrust   = lipgloss.Color("#1e1e2e") // panel bg
+	ColorSurface = lipgloss.Color("#313244") // selected row bg
+	ColorOverlay = lipgloss.Color("#45475a") // borders unfocused
+	ColorMuted   = lipgloss.Color("#585b70") // dim text
+	ColorSubtext = lipgloss.Color("#a6adc8") // secondary text
+	ColorText    = lipgloss.Color("#cdd6f4") // primary text
 
-	ColorBlue    = lipgloss.Color("#89b4fa")
-	ColorGreen   = lipgloss.Color("#a6e3a1")
-	ColorRed     = lipgloss.Color("#f38ba8")
-	ColorYellow  = lipgloss.Color("#f9e2af")
-	ColorOrange  = lipgloss.Color("#fab387")
-	ColorPurple  = lipgloss.Color("#cba6f7")
-	ColorTeal    = lipgloss.Color("#94e2d5")
-	ColorSky     = lipgloss.Color("#89dceb")
+	// Accents
+	ColorBlue    = lipgloss.Color("#89b4fa") // blue
+	ColorSky     = lipgloss.Color("#89dceb") // sky — focus highlight
+	ColorTeal    = lipgloss.Color("#94e2d5") // teal — AI / success
+	ColorGreen   = lipgloss.Color("#a6e3a1") // green — added
+	ColorYellow  = lipgloss.Color("#f9e2af") // yellow — warning
+	ColorPeach   = lipgloss.Color("#fab387") // peach — section headers
+	ColorOrange  = lipgloss.Color("#fe640b") // orange — hashes
+	ColorRed     = lipgloss.Color("#f38ba8") // red — deleted / error
+	ColorPurple  = lipgloss.Color("#cba6f7") // purple — author
+	ColorPink    = lipgloss.Color("#f5c2e7") // pink — renamed
 )
 
 // Theme holds all Lipgloss styles used throughout the TUI.
@@ -27,7 +33,7 @@ type Theme struct {
 	FocusedBorder   lipgloss.Style
 	UnfocusedBorder lipgloss.Style
 
-	// Text
+	// Text hierarchy
 	Title    lipgloss.Style
 	Subtitle lipgloss.Style
 	Normal   lipgloss.Style
@@ -35,10 +41,10 @@ type Theme struct {
 	Bold     lipgloss.Style
 
 	// Selection
-	Selected   lipgloss.Style
-	Cursor     lipgloss.Style
+	Selected lipgloss.Style
+	Cursor   lipgloss.Style
 
-	// Git status badges
+	// Git status badges (compact, icon-first)
 	BadgeModified  lipgloss.Style
 	BadgeAdded     lipgloss.Style
 	BadgeDeleted   lipgloss.Style
@@ -46,7 +52,7 @@ type Theme struct {
 	BadgeConflict  lipgloss.Style
 	BadgeRenamed   lipgloss.Style
 
-	// Diff colors
+	// Diff
 	DiffAdded   lipgloss.Style
 	DiffRemoved lipgloss.Style
 	DiffContext lipgloss.Style
@@ -66,27 +72,27 @@ type Theme struct {
 	CommitRef     lipgloss.Style
 
 	// Status bar
-	StatusBar     lipgloss.Style
-	StatusKey     lipgloss.Style
-	StatusValue   lipgloss.Style
-	StatusSep     lipgloss.Style
+	StatusBar   lipgloss.Style
+	StatusKey   lipgloss.Style
+	StatusValue lipgloss.Style
+	StatusSep   lipgloss.Style
 
 	// Help
 	HelpKey   lipgloss.Style
 	HelpValue lipgloss.Style
 }
 
-// DefaultTheme returns the default dark theme (catppuccin-inspired).
+// DefaultTheme returns the polished dark theme.
 var DefaultTheme = Theme{
 	FocusedBorder: lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ColorBlue),
+		BorderForeground(ColorSky),
 
 	UnfocusedBorder: lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ColorMuted),
+		BorderForeground(ColorOverlay),
 
-	Title:    lipgloss.NewStyle().Foreground(ColorBlue).Bold(true),
+	Title:    lipgloss.NewStyle().Foreground(ColorSky).Bold(true),
 	Subtitle: lipgloss.NewStyle().Foreground(ColorSubtext),
 	Normal:   lipgloss.NewStyle().Foreground(ColorText),
 	Muted:    lipgloss.NewStyle().Foreground(ColorMuted),
@@ -96,20 +102,20 @@ var DefaultTheme = Theme{
 		Background(ColorSurface).
 		Foreground(ColorText),
 	Cursor: lipgloss.NewStyle().
-		Background(ColorBlue).
+		Background(ColorSky).
 		Foreground(ColorBase).
 		Bold(true),
 
 	BadgeModified:  lipgloss.NewStyle().Foreground(ColorYellow).Bold(true),
 	BadgeAdded:     lipgloss.NewStyle().Foreground(ColorGreen).Bold(true),
 	BadgeDeleted:   lipgloss.NewStyle().Foreground(ColorRed).Bold(true),
-	BadgeUntracked: lipgloss.NewStyle().Foreground(ColorOrange).Bold(true),
-	BadgeConflict:  lipgloss.NewStyle().Foreground(ColorRed).Bold(true).Blink(true),
-	BadgeRenamed:   lipgloss.NewStyle().Foreground(ColorPurple).Bold(true),
+	BadgeUntracked: lipgloss.NewStyle().Foreground(ColorPeach).Bold(true),
+	BadgeConflict:  lipgloss.NewStyle().Foreground(ColorRed).Bold(true),
+	BadgeRenamed:   lipgloss.NewStyle().Foreground(ColorPink).Bold(true),
 
 	DiffAdded:   lipgloss.NewStyle().Foreground(ColorGreen),
 	DiffRemoved: lipgloss.NewStyle().Foreground(ColorRed),
-	DiffContext: lipgloss.NewStyle().Foreground(ColorText),
+	DiffContext: lipgloss.NewStyle().Foreground(ColorSubtext),
 	DiffHeader:  lipgloss.NewStyle().Foreground(ColorBlue).Bold(true),
 	DiffHunk:    lipgloss.NewStyle().Foreground(ColorTeal),
 
@@ -117,26 +123,26 @@ var DefaultTheme = Theme{
 	BranchNormal:  lipgloss.NewStyle().Foreground(ColorText),
 	BranchRemote:  lipgloss.NewStyle().Foreground(ColorSubtext),
 
-	CommitHash:    lipgloss.NewStyle().Foreground(ColorOrange).Bold(true),
+	CommitHash:    lipgloss.NewStyle().Foreground(ColorPeach).Bold(true),
 	CommitSubject: lipgloss.NewStyle().Foreground(ColorText),
 	CommitAuthor:  lipgloss.NewStyle().Foreground(ColorPurple),
 	CommitDate:    lipgloss.NewStyle().Foreground(ColorMuted),
 	CommitRef:     lipgloss.NewStyle().Foreground(ColorYellow),
 
 	StatusBar: lipgloss.NewStyle().
-		Background(ColorSurface).
+		Background(ColorMantle).
 		Foreground(ColorText),
 	StatusKey: lipgloss.NewStyle().
-		Background(ColorSurface).
-		Foreground(ColorBlue).
+		Background(ColorMantle).
+		Foreground(ColorSky).
 		Bold(true),
 	StatusValue: lipgloss.NewStyle().
-		Background(ColorSurface).
+		Background(ColorMantle).
 		Foreground(ColorSubtext),
 	StatusSep: lipgloss.NewStyle().
-		Background(ColorSurface).
+		Background(ColorMantle).
 		Foreground(ColorOverlay),
 
-	HelpKey:   lipgloss.NewStyle().Foreground(ColorBlue).Bold(true),
+	HelpKey:   lipgloss.NewStyle().Foreground(ColorSky).Bold(true),
 	HelpValue: lipgloss.NewStyle().Foreground(ColorSubtext),
 }

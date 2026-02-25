@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Kroszborg/sugi/internal/ai"
+	"github.com/Kroszborg/sugi/internal/config"
+	"github.com/Kroszborg/sugi/internal/forge"
 	"github.com/Kroszborg/sugi/internal/git"
 	"github.com/Kroszborg/sugi/internal/ui"
 	tea "github.com/charmbracelet/bubbletea"
@@ -52,7 +55,25 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not a git repository: %w", err)
 	}
 
-	model := ui.New(repo)
+	cfg := config.Load()
+
+	// Detect forge from origin remote
+	var forgeClient forge.ForgeClient
+	if originURL := repo.OriginURL(); originURL != "" {
+		info := forge.Detect(originURL)
+		if info.IsKnown() {
+			switch info.Type {
+			case forge.ForgeGitHub:
+				forgeClient = forge.NewGitHubClient(info, cfg.EffectiveGitHubToken())
+			case forge.ForgeGitLab:
+				forgeClient = forge.NewGitLabClient(info, cfg.EffectiveGitLabToken())
+			}
+		}
+	}
+
+	aiGen := ai.NewGenerator(cfg.GroqAPIKey, cfg.GroqModel)
+
+	model := ui.New(repo, cfg, forgeClient, aiGen)
 
 	p := tea.NewProgram(
 		model,

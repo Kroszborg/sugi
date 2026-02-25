@@ -1,0 +1,111 @@
+version: 2
+
+project_name: sugi
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: sugi
+    main: ./cmd/sugi
+    binary: sugi
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: sugi
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- if eq .Os "darwin" }}macOS
+      {{- else }}{{ title .Os }}{{ end }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "Merge pull request"
+      - "Merge branch"
+  groups:
+    - title: Features
+      regexp: "^feat"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^fix"
+      order: 1
+    - title: Other
+      order: 999
+
+brews:
+  - name: sugi
+    homepage: "https://github.com/Kroszborg/sugi"
+    description: "Terminal UI git client — GitHub/GitLab PRs, AI commit messages, commit graph"
+    license: MIT
+    repository:
+      owner: Kroszborg
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: sugi-bot
+      email: bot@sugi.dev
+    install: |
+      bin.install "sugi"
+    test: |
+      system "#{bin}/sugi", "version"
+
+release:
+  github:
+    owner: Kroszborg
+    name: sugi
+  draft: false
+  prerelease: auto
+  name_template: "v{{.Version}}"
+  header: |
+    ## sugi {{.Version}}
+
+    A terminal UI git client that beats lazygit — with GitHub/GitLab PR integration,
+    AI-generated commit messages (Ollama + Groq), and a full commit graph.
+
+  footer: |
+    **Install:**
+    ```sh
+    # npm
+    npm install -g sugi
+
+    # Homebrew
+    brew install Kroszborg/tap/sugi
+
+    # go install
+    go install github.com/Kroszborg/sugi/cmd/sugi@latest
+    ```

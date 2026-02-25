@@ -14,9 +14,9 @@ type KeyHint struct {
 
 // StatusBar renders the bottom key-hint bar.
 type StatusBar struct {
-	Width  int
-	Hints  []KeyHint
-	Extra  string // right-aligned status message (e.g. "3/24 files")
+	Width int
+	Hints []KeyHint
+	Extra string // right-aligned status message
 
 	keyStyle   lipgloss.Style
 	descStyle  lipgloss.Style
@@ -27,19 +27,19 @@ type StatusBar struct {
 
 // NewStatusBar creates a StatusBar for the given terminal width.
 func NewStatusBar(width int) StatusBar {
-	bg := lipgloss.Color("#313244")
+	bg := lipgloss.Color("#181825") // ColorMantle — matches header
 	return StatusBar{
 		Width: width,
 		keyStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#89b4fa")).
+			Foreground(lipgloss.Color("#89dceb")). // ColorSky
 			Bold(true),
 		descStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#a6adc8")),
+			Foreground(lipgloss.Color("#585b70")), // ColorMuted
 		sepStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#45475a")),
+			Foreground(lipgloss.Color("#313244")), // ColorSurface
 		barStyle: lipgloss.NewStyle().
 			Background(bg).
 			Width(width),
@@ -55,13 +55,13 @@ func (sb StatusBar) View() string {
 	for _, h := range sb.Hints {
 		parts = append(parts,
 			sb.keyStyle.Render(h.Key)+
-				sb.descStyle.Render(":"+h.Desc),
+				sb.sepStyle.Render(":")+
+				sb.descStyle.Render(h.Desc),
 		)
 	}
 	left := strings.Join(parts, sb.sepStyle.Render("  "))
 	right := sb.extraStyle.Render(sb.Extra)
 
-	// Simple left+right layout
 	leftLen := lipgloss.Width(left)
 	rightLen := lipgloss.Width(right)
 	pad := sb.Width - leftLen - rightLen
