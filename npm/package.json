@@ -1,24 +1,38 @@
 {
-  "name": "sugi",
+  "name": "@kroszborg/sugi",
   "version": "0.1.0",
   "description": "Terminal UI git client — GitHub/GitLab PRs, AI commit messages, commit graph",
-  "keywords": ["git", "tui", "terminal", "github", "gitlab", "ai", "cli", "lazygit"],
+  "keywords": [
+    "git",
+    "tui",
+    "terminal",
+    "github",
+    "gitlab",
+    "ai",
+    "cli",
+    "lazygit"
+  ],
   "homepage": "https://github.com/Kroszborg/sugi",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kroszborg/sugi.git"
+    "url": "git+https://github.com/Kroszborg/sugi.git"
   },
-  "bugs": { "url": "https://github.com/Kroszborg/sugi/issues" },
+  "bugs": {
+    "url": "https://github.com/Kroszborg/sugi/issues"
+  },
   "license": "MIT",
   "bin": {
-    "sugi": "./bin.js"
+    "sugi": "bin.js"
   },
   "scripts": {
     "postinstall": "node install.js"
   },
   "files": [
     "bin.js",
-    "install.js"
+    "install.js",
+    "README.md"
   ],
-  "engines": { "node": ">=16" }
+  "engines": {
+    "node": ">=16"
+  }
 }
