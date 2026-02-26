@@ -40,6 +40,23 @@ archives:
       - README.md
       - LICENSE
 
+brews:
+  - name: sugi
+    homepage: "https://github.com/Kroszborg/sugi"
+    description: "Terminal UI git client — GitHub/GitLab PRs, AI commit messages, commit graph"
+    license: MIT
+    repository:
+      owner: Kroszborg
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: sugi-bot
+      email: bot@sugi.dev
+    install: |
+      bin.install "sugi"
+    test: |
+      system "#{bin}/sugi", "version"
+
 checksum:
   name_template: "checksums.txt"
   algorithm: sha256
@@ -67,22 +84,6 @@ changelog:
     - title: Other
       order: 999
 
-brews:
-  - name: sugi
-    homepage: "https://github.com/Kroszborg/sugi"
-    description: "Terminal UI git client — GitHub/GitLab PRs, AI commit messages, commit graph"
-    license: MIT
-    repository:
-      owner: Kroszborg
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    commit_author:
-      name: sugi-bot
-      email: bot@sugi.dev
-    install: |
-      bin.install "sugi"
-    test: |
-      system "#{bin}/sugi", "version"
 
 release:
   github:
