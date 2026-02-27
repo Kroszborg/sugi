@@ -86,6 +86,24 @@ func (c *Client) StageHunk(patch string) error {
 	return nil
 }
 
+// ResetSoft moves HEAD to ref, keeping staged and working-tree changes.
+func (c *Client) ResetSoft(ref string) error {
+	_, err := c.run("reset", "--soft", ref)
+	return err
+}
+
+// ResetMixed moves HEAD to ref, unstaging changes but keeping working tree.
+func (c *Client) ResetMixed(ref string) error {
+	_, err := c.run("reset", "--mixed", ref)
+	return err
+}
+
+// ResetHard moves HEAD to ref, discarding all staged and unstaged changes.
+func (c *Client) ResetHard(ref string) error {
+	_, err := c.run("reset", "--hard", ref)
+	return err
+}
+
 // UnstageHunk reverses a specific diff hunk from the index.
 func (c *Client) UnstageHunk(patch string) error {
 	cmd := c.buildCmd("apply", "--cached", "--unidiff-zero", "--reverse", "-")

@@ -24,17 +24,30 @@ type KeyMap struct {
 	PrevPanel     key.Binding
 
 	// Git actions
-	Stage     key.Binding
-	Unstage   key.Binding
-	StageAll  key.Binding
-	Discard   key.Binding
-	Commit    key.Binding
-	Push      key.Binding
-	Pull      key.Binding
-	Fetch     key.Binding
-	Checkout  key.Binding
-	NewBranch key.Binding
-	Delete    key.Binding
+	Stage        key.Binding
+	Unstage      key.Binding
+	StageAll     key.Binding
+	Discard      key.Binding
+	Commit       key.Binding
+	Push         key.Binding
+	Pull         key.Binding
+	Fetch        key.Binding
+	Checkout     key.Binding
+	NewBranch    key.Binding
+	Delete       key.Binding
+	CherryPick   key.Binding
+	Tags         key.Binding
+	Revert       key.Binding
+	Reset        key.Binding
+	RenameBranch key.Binding
+	Merge        key.Binding
+	Rebase       key.Binding
+	FileHistory  key.Binding
+	Worktree     key.Binding
+	InterRebase  key.Binding
+	OpenBrowser  key.Binding
+	Remotes      key.Binding
+	Bisect       key.Binding
 
 	// View toggles
 	ToggleSideBySide key.Binding
@@ -78,9 +91,22 @@ func DefaultKeyMap() KeyMap {
 		Push:      key.NewBinding(key.WithKeys("P"), key.WithHelp("P", "push")),
 		Pull:      key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "pull")),
 		Fetch:     key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "fetch")),
-		Checkout:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "checkout/select")),
-		NewBranch: key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new branch")),
-		Delete:    key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "delete")),
+		Checkout:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "checkout/select")),
+		NewBranch:  key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new branch")),
+		Delete:     key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "delete")),
+		CherryPick:   key.NewBinding(key.WithKeys("C"), key.WithHelp("C", "cherry-pick")),
+		Tags:         key.NewBinding(key.WithKeys("t"), key.WithHelp("t", "tags")),
+		Revert:       key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "revert commit")),
+		Reset:        key.NewBinding(key.WithKeys("X"), key.WithHelp("X", "reset HEAD")),
+		RenameBranch: key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "rename branch")),
+		Merge:        key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "merge branch")),
+		Rebase:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "rebase onto branch")),
+		FileHistory:  key.NewBinding(key.WithKeys("L"), key.WithHelp("L", "file history")),
+		Worktree:     key.NewBinding(key.WithKeys("W"), key.WithHelp("W", "worktrees")),
+		InterRebase:  key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "interactive rebase")),
+		OpenBrowser:  key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open in browser")),
+		Remotes:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "remotes panel")),
+		Bisect:       key.NewBinding(key.WithKeys("B"), key.WithHelp("B", "git bisect")),
 
 		ToggleSideBySide: key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "side-by-side diff")),
 		ToggleDiffStaged: key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "toggle staged diff")),

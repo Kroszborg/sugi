@@ -108,3 +108,39 @@ func (c *Client) RenameBranch(newName string) error {
 	_, err := c.run("branch", "-m", newName)
 	return err
 }
+
+// MergeBranch merges the named branch into the current branch.
+func (c *Client) MergeBranch(name string) error {
+	_, err := c.run("merge", name)
+	return err
+}
+
+// MergeAbort aborts an in-progress merge.
+func (c *Client) MergeAbort() error {
+	_, err := c.run("merge", "--abort")
+	return err
+}
+
+// RebaseBranch rebases the current branch onto the named target.
+func (c *Client) RebaseBranch(target string) error {
+	_, err := c.run("rebase", target)
+	return err
+}
+
+// RebaseAbort aborts an in-progress rebase.
+func (c *Client) RebaseAbort() error {
+	_, err := c.run("rebase", "--abort")
+	return err
+}
+
+// RebaseContinue continues an in-progress rebase.
+func (c *Client) RebaseContinue() error {
+	_, err := c.run("rebase", "--continue")
+	return err
+}
+
+// DeleteRemoteBranch deletes a remote-tracking branch.
+func (c *Client) DeleteRemoteBranch(remote, branch string) error {
+	_, err := c.run("push", remote, "--delete", branch)
+	return err
+}

@@ -50,26 +50,25 @@ func (c *Client) ForceRemoveWorktree(path string) error {
 }
 
 // parseWorktrees parses git worktree list --porcelain output.
+// Uses a value accumulator (not a pointer) to avoid pointer-after-realloc bugs.
 func parseWorktrees(raw string) []Worktree {
 	var worktrees []Worktree
-	var current *Worktree
+	var current Worktree
+	inEntry := false
 
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimRight(line, "\r")
 		if line == "" {
-			if current != nil {
-				worktrees = append(worktrees, *current)
-				current = nil
+			// Blank line = end of entry
+			if inEntry && current.Path != "" {
+				worktrees = append(worktrees, current)
 			}
+			current = Worktree{}
+			inEntry = false
 			continue
 		}
 
-		if current == nil {
-			current = &Worktree{}
-			worktrees = append(worktrees, *current)
-			current = &worktrees[len(worktrees)-1]
-		}
-
+		inEntry = true
 		switch {
 		case strings.HasPrefix(line, "worktree "):
 			current.Path = strings.TrimPrefix(line, "worktree ")
@@ -77,7 +76,6 @@ func parseWorktrees(raw string) []Worktree {
 			current.Head = strings.TrimPrefix(line, "HEAD ")
 		case strings.HasPrefix(line, "branch "):
 			b := strings.TrimPrefix(line, "branch ")
-			// Strip "refs/heads/" prefix
 			current.Branch = strings.TrimPrefix(b, "refs/heads/")
 		case line == "bare":
 			current.IsBare = true
@@ -86,18 +84,9 @@ func parseWorktrees(raw string) []Worktree {
 		}
 	}
 
-	if current != nil && current.Path != "" {
-		// Check if already appended
-		found := false
-		for _, w := range worktrees {
-			if w.Path == current.Path {
-				found = true
-				break
-			}
-		}
-		if !found {
-			worktrees = append(worktrees, *current)
-		}
+	// Flush last entry if file doesn't end with blank line
+	if inEntry && current.Path != "" {
+		worktrees = append(worktrees, current)
 	}
 
 	// Mark main worktree (first one)

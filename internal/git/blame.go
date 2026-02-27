@@ -1,6 +1,7 @@
 package git
 
 import (
+	"strconv"
 	"strings"
 	"time"
 )
@@ -76,15 +77,11 @@ func parseBlamePorcelain(raw string) []BlameLine {
 			if strings.HasPrefix(field, "author ") {
 				ci.author = strings.TrimPrefix(field, "author ")
 			} else if strings.HasPrefix(field, "author-time ") {
-				// Unix timestamp
-				ts := strings.TrimPrefix(field, "author-time ")
-				var unix int64
-				for _, r := range ts {
-					if r >= '0' && r <= '9' {
-						unix = unix*10 + int64(r-'0')
-					}
+				// Unix timestamp — use strconv to safely parse and avoid overflow
+				ts := strings.TrimSpace(strings.TrimPrefix(field, "author-time "))
+				if unix, err := strconv.ParseInt(ts, 10, 64); err == nil {
+					ci.date = time.Unix(unix, 0)
 				}
-				ci.date = time.Unix(unix, 0)
 			}
 			i++
 		}

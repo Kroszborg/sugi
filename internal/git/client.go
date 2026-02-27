@@ -90,6 +90,17 @@ func (c *Client) PushSetUpstream(remote, branch string) error {
 	return err
 }
 
+// PushForceWithLease pushes with --force-with-lease (safe force push for rebased branches).
+func (c *Client) PushForceWithLease(remote, branch string) error {
+	_, err := c.run("push", "--force-with-lease", remote, branch)
+	return err
+}
+
+// RunPublic exposes run for use in packages that wrap Client. Use sparingly.
+func (c *Client) RunPublic(args ...string) (string, error) {
+	return c.run(args...)
+}
+
 // Pull fetches and merges the upstream branch.
 func (c *Client) Pull() error {
 	_, err := c.run("pull")

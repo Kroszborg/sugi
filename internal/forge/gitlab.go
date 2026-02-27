@@ -222,7 +222,7 @@ func (c *GitLabClient) get(url string, out interface{}) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("GitLab API %s: %s", resp.Status, string(body))
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
@@ -256,7 +256,7 @@ func (c *GitLabClient) doJSON(method, url string, body, out interface{}) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("GitLab API %s: %s", resp.Status, string(b))
 	}
 	if out != nil {

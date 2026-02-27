@@ -33,14 +33,9 @@ func (c *Client) Log(limit int) ([]Commit, error) {
 	args := []string{
 		"log",
 		"--format=" + format,
-		"--no-walk=unsorted",
 	}
 	if limit > 0 {
-		args = append(args, "--max-count", string(rune('0'+limit/10))+string(rune('0'+limit%10)))
-		// Use Itoa approach properly
-		args = args[:len(args)-2]
-		args = append(args, "--max-count")
-		args = append(args, itoa(limit))
+		args = append(args, "--max-count", itoa(limit))
 	}
 
 	lines, err := c.runLines(args...)
@@ -126,6 +121,61 @@ func (c *Client) CommitDetail(hash string) (*Commit, error) {
 		Body:        body,
 		Refs:        refs,
 	}, nil
+}
+
+// LogFile returns commits that touched a specific file path.
+func (c *Client) LogFile(path string, limit int) ([]Commit, error) {
+	sep := "\x1f"
+	format := strings.Join([]string{
+		"%H", "%h", "%an", "%ae", "%ai", "%s", "%D",
+	}, sep)
+
+	args := []string{
+		"log",
+		"--format=" + format,
+		"--follow",
+		"--",
+		path,
+	}
+	if limit > 0 {
+		args = []string{"log", "--format=" + format, "--follow", "--max-count", itoa(limit), "--", path}
+	}
+
+	lines, err := c.runLines(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	var commits []Commit
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, sep)
+		if len(parts) < 6 {
+			continue
+		}
+		date, _ := time.Parse("2006-01-02 15:04:05 -0700", parts[4])
+		var refs []string
+		if len(parts) > 6 && parts[6] != "" {
+			for _, ref := range strings.Split(parts[6], ", ") {
+				ref = strings.TrimSpace(ref)
+				if ref != "" {
+					refs = append(refs, ref)
+				}
+			}
+		}
+		commits = append(commits, Commit{
+			Hash:        parts[0],
+			ShortHash:   parts[1],
+			Author:      parts[2],
+			AuthorEmail: parts[3],
+			Date:        date,
+			Subject:     parts[5],
+			Refs:        refs,
+		})
+	}
+	return commits, nil
 }
 
 // LogGraph returns formatted commit graph output for rendering.

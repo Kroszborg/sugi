@@ -16,12 +16,13 @@ import (
 var version = "dev"
 
 var rootCmd = &cobra.Command{
-	Use:   "sugi [path]",
-	Short: "sugi - Terminal UI git client",
-	Long: `sugi (杉) - A terminal UI git client that beats lazygit.
+	Use:     "sugi [path]",
+	Short:   "sugi - Terminal UI git client",
+	Version: version,
+	Long: `sugi (杉) - A terminal UI git client.
 
-Features: GitHub/GitLab PR integration, AI commit messages,
-commit graph, difftastic support, and more.`,
+Panels: Files, Branches, Commits, Diff, PRs, Stash, Blame,
+Worktrees, Remotes, Bisect, Interactive Rebase, Conflict Resolver.`,
 	Args:          cobra.MaximumNArgs(1),
 	SilenceUsage:  true,
 	SilenceErrors: true,

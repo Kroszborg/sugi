@@ -79,6 +79,44 @@ func (m *FilesModel) MoveUp() { m.list.MoveUp() }
 // MoveDown moves the cursor down.
 func (m *FilesModel) MoveDown() { m.list.MoveDown() }
 
+// ToggleSelect toggles multi-selection on the current file item.
+func (m *FilesModel) ToggleSelect() {
+	// Only allow selecting non-header items
+	cur := m.list.CurrentItem()
+	if isSectionHeader(cur) {
+		return
+	}
+	m.list.ToggleSelect()
+}
+
+// HasSelection returns true if any files are multi-selected.
+func (m *FilesModel) HasSelection() bool { return m.list.HasSelection() }
+
+// SelectionCount returns the number of multi-selected items.
+func (m *FilesModel) SelectionCount() int { return len(m.list.SelectedIndices()) }
+
+// SelectedFiles returns the FileStatus entries for all multi-selected list rows.
+func (m *FilesModel) SelectedFiles() []git.FileStatus {
+	indices := m.list.SelectedIndices()
+	var out []git.FileStatus
+	fileIdx := 0
+	for i, item := range m.list.Items {
+		if isSectionHeader(item) {
+			continue
+		}
+		for _, sel := range indices {
+			if sel == i && fileIdx < len(m.files) {
+				out = append(out, m.files[fileIdx])
+			}
+		}
+		fileIdx++
+	}
+	return out
+}
+
+// ClearSelection clears multi-selection.
+func (m *FilesModel) ClearSelection() { m.list.ClearSelected() }
+
 // View renders the files panel content (without border).
 func (m *FilesModel) View() string {
 	if len(m.files) == 0 {

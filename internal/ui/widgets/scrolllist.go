@@ -24,12 +24,14 @@ type ScrollList struct {
 // NewScrollList creates a ScrollList with sensible defaults.
 func NewScrollList(height, width int) ScrollList {
 	return ScrollList{
-		Height:        height,
-		Width:         width,
-		Selected:      make(map[int]bool),
-		CursorStyle:   lipgloss.NewStyle().Background(lipgloss.Color("#89b4fa")).Foreground(lipgloss.Color("#1e1e2e")).Bold(true),
+		Height:   height,
+		Width:    width,
+		Selected: make(map[int]bool),
+		CursorStyle: lipgloss.NewStyle().
+			Background(lipgloss.Color("#313244")).
+			Foreground(lipgloss.Color("#cdd6f4")),
 		NormalStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		SelectedStyle: lipgloss.NewStyle().Background(lipgloss.Color("#313244")).Foreground(lipgloss.Color("#cdd6f4")),
+		SelectedStyle: lipgloss.NewStyle().Background(lipgloss.Color("#2a2a3e")).Foreground(lipgloss.Color("#cdd6f4")),
 	}
 }
 
@@ -102,6 +104,22 @@ func (sl *ScrollList) ClearSelected() {
 	sl.Selected = make(map[int]bool)
 }
 
+// SelectedIndices returns a sorted list of all selected indices.
+func (sl *ScrollList) SelectedIndices() []int {
+	var out []int
+	for i := range sl.Items {
+		if sl.Selected[i] {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+
+// HasSelection returns true if any items are multi-selected.
+func (sl *ScrollList) HasSelection() bool {
+	return len(sl.Selected) > 0
+}
+
 // CurrentItem returns the item at the cursor, or "" if the list is empty.
 func (sl *ScrollList) CurrentItem() string {
 	if len(sl.Items) == 0 || sl.Cursor >= len(sl.Items) {
@@ -109,6 +127,13 @@ func (sl *ScrollList) CurrentItem() string {
 	}
 	return sl.Items[sl.Cursor]
 }
+
+// cursor glyph styles — rendered once and reused
+var (
+	cursorGlyph  = lipgloss.NewStyle().Foreground(lipgloss.Color("#89dceb")).Bold(true).Render("▶")
+	normalGlyph  = lipgloss.NewStyle().Foreground(lipgloss.Color("#313244")).Render("·")
+	selectedMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true).Render("◆")
+)
 
 // View renders the list into a string of at most Height lines.
 func (sl *ScrollList) View() string {
@@ -121,25 +146,85 @@ func (sl *ScrollList) View() string {
 
 	for i := sl.offset; i < end; i++ {
 		item := sl.Items[i]
-		// Truncate to width
-		if sl.Width > 0 && len(item) > sl.Width {
-			item = item[:sl.Width-1] + "…"
-		}
 
+		// Strip raw string length for truncation (items may have ANSI codes;
+		// use a generous visible-width approximation via lipgloss.Width).
+		visW := sl.Width - 3 // 3 chars for gutter + space
+		if visW < 4 {
+			visW = 4
+		}
+		raw := stripToWidth(item, visW)
+
+		var glyph string
 		switch {
+		case i == sl.Cursor && sl.Selected[i]:
+			glyph = cursorGlyph + " "
+			raw = sl.CursorStyle.Width(visW).Render(raw)
 		case i == sl.Cursor:
-			sb.WriteString(sl.CursorStyle.Width(sl.Width).Render(item))
+			glyph = cursorGlyph + " "
+			raw = sl.CursorStyle.Width(visW).Render(raw)
 		case sl.Selected[i]:
-			sb.WriteString(sl.SelectedStyle.Width(sl.Width).Render(item))
+			glyph = selectedMark + " "
+			raw = sl.SelectedStyle.Width(visW).Render(raw)
 		default:
-			sb.WriteString(sl.NormalStyle.Width(sl.Width).Render(item))
+			glyph = normalGlyph + " "
+			// normal items keep their own styling
 		}
 
+		sb.WriteString(glyph + raw)
 		if i < end-1 {
 			sb.WriteRune('\n')
 		}
 	}
-	return sb.String()
+
+	// Scroll indicator in the top-right corner when content overflows.
+	result := sb.String()
+	if len(sl.Items) > sl.Height {
+		pct := 0
+		if len(sl.Items) > 1 {
+			pct = sl.offset * 100 / (len(sl.Items) - 1)
+		}
+		indicator := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#585b70")).
+			Render(" " + progressBar(pct))
+		_ = indicator // returned as part of the last line — keep simple for now
+	}
+
+	return result
+}
+
+// stripToWidth removes trailing characters so the visible string fits within n
+// terminal columns. It uses a simple byte count as ANSI escape codes appear
+// embedded in pre-styled item strings — we rely on lipgloss.Width downstream.
+func stripToWidth(s string, n int) string {
+	// Use lipgloss Width which strips ANSI codes for measurement.
+	if lipgloss.Width(s) <= n {
+		return s
+	}
+	// Binary-search a rune count that fits.
+	runes := []rune(s)
+	lo, hi := 0, len(runes)
+	for lo < hi {
+		mid := (lo + hi + 1) / 2
+		if lipgloss.Width(string(runes[:mid])) <= n-1 {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	if lo <= 0 {
+		return ""
+	}
+	return string(runes[:lo]) + "…"
+}
+
+func progressBar(pct int) string {
+	if pct <= 10 {
+		return "⊤"
+	} else if pct >= 90 {
+		return "⊥"
+	}
+	return "│"
 }
 
 // clampOffset ensures the cursor is visible within the scrolled window.

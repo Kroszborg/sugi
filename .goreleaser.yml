@@ -43,7 +43,7 @@ archives:
 brews:
   - name: sugi
     homepage: "https://github.com/Kroszborg/sugi"
-    description: "Terminal UI git client — GitHub/GitLab PRs, AI commit messages, commit graph"
+    description: "Terminal UI git client — PRs, AI commits, interactive rebase, bisect, worktrees"
     license: MIT
     repository:
       owner: Kroszborg
@@ -95,8 +95,8 @@ release:
   header: |
     ## sugi {{.Version}}
 
-    A terminal UI git client that beats lazygit — with GitHub/GitLab PR integration,
-    AI-generated commit messages (Ollama + Groq), and a full commit graph.
+    A terminal UI git client with GitHub/GitLab PR integration, AI commit messages,
+    interactive rebase, bisect, worktrees, remotes management, conflict resolver, and more.
 
   footer: |
     **Install:**

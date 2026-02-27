@@ -3,7 +3,10 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/Kroszborg/sugi/internal/ai"
 	"github.com/Kroszborg/sugi/internal/config"
@@ -64,6 +67,37 @@ type GitPRsMsg struct {
 	PRs []forge.PullRequest
 	Err error
 }
+type GitTagsMsg struct {
+	Tags []git.Tag
+	Err  error
+}
+type GitWorktreesMsg struct {
+	Worktrees []git.Worktree
+	Err       error
+}
+type GitFileHistoryMsg struct {
+	Path    string
+	Commits []git.Commit
+	Err     error
+}
+type GitRebaseTodoMsg struct {
+	Entries  []git.RebaseTodoEntry
+	TodoPath string
+	Err      error
+}
+type GitConflictMsg struct {
+	Path   string
+	Blocks []git.ConflictBlock
+	Err    error
+}
+type GitRemotesMsg struct {
+	Remotes []git.RemoteEntry
+	Err     error
+}
+type GitBisectMsg struct {
+	Status git.BisectStatus
+	Err    error
+}
 type StatusMsg struct {
 	Text  string
 	IsErr bool
@@ -76,6 +110,16 @@ type AIErrorMsg struct{ Err error }
 
 // AISummaryMsg is emitted when the diff summary generation completes.
 type AISummaryMsg struct{ Text string }
+
+// TickMsg is emitted by the auto-refresh ticker.
+type TickMsg struct{}
+
+// GitHeadCommitMsg carries the HEAD commit subject+body for amend mode.
+type GitHeadCommitMsg struct {
+	Subject string
+	Body    string
+	Err     error
+}
 
 // SettingsSavedMsg is emitted after settings are written to disk.
 type SettingsSavedMsg struct{ Cfg config.Config }
@@ -108,14 +152,32 @@ const (
 	ModePalette
 	ModeAISummary
 	ModeSettings
+	ModeConfirm      // destructive action confirmation dialog
+	ModeNewTag       // new tag name input
+	ModeRenameBranch // rename branch input
+	ModeReset        // waiting for s/m/h after X
+	ModeWorktree     // worktrees panel
+	ModeInterRebase  // interactive rebase panel
+	ModeConflict     // merge conflict resolution panel
+	ModeFileHistory  // file history panel
+	ModeRemotes      // remotes management panel
+	ModeAddRemote    // adding a new remote (two-step modal)
+	ModeBisect       // git bisect panel
 )
 
 // Extended PanelIDs (beyond the core 0-4 in layout.go)
 const (
-	PanelStash  PanelID = 10
-	PanelBlame  PanelID = 11
-	PanelReflog PanelID = 12
-	PanelPR     PanelID = 13
+	PanelStash       PanelID = 10
+	PanelBlame       PanelID = 11
+	PanelReflog      PanelID = 12
+	PanelPR          PanelID = 13
+	PanelTags        PanelID = 14
+	PanelWorktree    PanelID = 15
+	PanelInterRebase PanelID = 16
+	PanelConflict    PanelID = 17
+	PanelFileHistory PanelID = 18
+	PanelRemotes     PanelID = 19
+	PanelBisect      PanelID = 20
 )
 
 // --- Model ---
@@ -136,8 +198,15 @@ type Model struct {
 	blame     panels.BlameModel
 	reflog    panels.ReflogModel
 	pr        panels.PRModel
-	palette   panels.PaletteModel
-	settings  panels.SettingsModel
+	tags        panels.TagsModel
+	worktree    panels.WorktreeModel
+	rebase      panels.RebaseModel
+	conflict    panels.ConflictModel
+	fileHistory panels.CommitModel
+	remotes     panels.RemotesModel
+	bisect      panels.BisectModel
+	palette     panels.PaletteModel
+	settings    panels.SettingsModel
 
 	help        widgets.HelpOverlay
 	searchInput textinput.Model
@@ -164,6 +233,22 @@ type Model struct {
 
 	aiSummary string // AI diff summary text
 
+	// Confirm modal for destructive actions
+	confirmModal  widgets.Modal
+	confirmAction func() tea.Cmd
+
+	// Reset mode: tracks ref target while waiting for s/m/h key
+	resetTargetRef string
+
+	// File history: path of file being browsed
+	fileHistoryPath string
+
+	// Toast notifications
+	toast widgets.ToastQueue
+
+	// Amend mode: next commit uses git commit --amend
+	amendMode bool
+
 	theme Theme
 }
 
@@ -188,7 +273,11 @@ func New(repo *git.Client, cfg config.Config, forgeClient forge.ForgeClient, aiG
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.loadStatus(), m.loadBranches(), m.loadCommits())
+	return tea.Batch(m.loadStatus(), m.loadBranches(), m.loadCommits(), m.tickCmd())
+}
+
+func (m Model) tickCmd() tea.Cmd {
+	return tea.Tick(10*time.Second, func(_ time.Time) tea.Msg { return TickMsg{} })
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -199,6 +288,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.rebuildPanels()
 		return m, tea.Batch(m.loadStatus(), m.loadBranches(), m.loadCommits())
+
+	case TickMsg:
+		// Auto-refresh: reload status and branches quietly
+		return m, tea.Batch(m.loadStatus(), m.loadBranches(), m.tickCmd())
+
+	case GitHeadCommitMsg:
+		if msg.Err != nil {
+			m.setStatus("Cannot amend: "+msg.Err.Error(), true)
+		} else {
+			m.amendMode = true
+			m.mode = ModeCommit
+			m.commitMsg.Focus()
+			val := msg.Subject
+			if msg.Body != "" {
+				val += "\n\n" + msg.Body
+			}
+			m.commitMsg.SetValue(val)
+			m.setStatus("Amend mode — edit message and ctrl+s to amend HEAD", false)
+		}
 
 	case tea.MouseMsg:
 		return m.handleMouse(msg)
@@ -261,14 +369,83 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.setStatus("PRs: "+msg.Err.Error(), true)
 		}
 
+	case GitTagsMsg:
+		if msg.Err == nil {
+			m.tags.SetTags(msg.Tags)
+		} else {
+			m.setStatus("Tags: "+msg.Err.Error(), true)
+		}
+
+	case GitWorktreesMsg:
+		if msg.Err == nil {
+			m.worktree.SetWorktrees(msg.Worktrees)
+		} else {
+			m.setStatus("Worktrees: "+msg.Err.Error(), true)
+		}
+
+	case GitFileHistoryMsg:
+		if msg.Err == nil {
+			m.fileHistoryPath = msg.Path
+			m.fileHistory.SetCommits(msg.Commits)
+			m.focused = PanelFileHistory
+			m.mode = ModeFileHistory
+		} else {
+			m.setStatus("File history: "+msg.Err.Error(), true)
+		}
+
+	case GitRebaseTodoMsg:
+		if msg.Err == nil {
+			m.rebase.SetEntries(msg.Entries, msg.TodoPath)
+			m.focused = PanelInterRebase
+			m.mode = ModeInterRebase
+		} else {
+			m.setStatus("Rebase: "+msg.Err.Error(), true)
+		}
+
+	case GitConflictMsg:
+		if msg.Err == nil {
+			m.conflict.SetConflicts(msg.Path, msg.Blocks)
+			m.focused = PanelConflict
+			m.mode = ModeConflict
+		} else {
+			m.setStatus("Conflict: "+msg.Err.Error(), true)
+		}
+
+	case GitRemotesMsg:
+		if msg.Err == nil {
+			m.remotes.SetRemotes(msg.Remotes)
+		} else {
+			m.setStatus("Remotes: "+msg.Err.Error(), true)
+		}
+
+	case GitBisectMsg:
+		if msg.Err != nil {
+			m.setStatus("Bisect: "+msg.Err.Error(), true)
+		} else {
+			m.bisect.SetStatus(msg.Status)
+		}
+
 	case GitOperationMsg:
 		m.loading = false
+		m.amendMode = false
 		if msg.Err != nil {
 			m.setStatus(msg.Op+" failed: "+msg.Err.Error(), true)
 		} else {
-			m.setStatus(msg.Op+" ✓", false)
+			// After a commit, prompt user to push
+			if msg.Op == "Commit" || msg.Op == "Amend" {
+				m.setStatus("✓ "+msg.Op+" done  —  push with shift+P", false)
+			} else {
+				m.setStatus(msg.Op+" ✓", false)
+			}
 		}
-		return m, tea.Batch(m.loadStatus(), m.loadBranches(), m.loadCommits())
+		cmds := []tea.Cmd{m.loadStatus(), m.loadBranches(), m.loadCommits()}
+		if m.focused == PanelRemotes {
+			cmds = append(cmds, m.loadRemotes())
+		}
+		if m.focused == PanelBisect || m.focused == PanelWorktree {
+			cmds = append(cmds, m.loadBisectStatus())
+		}
+		return m, tea.Batch(cmds...)
 
 	case AIChunkMsg:
 		m.aiBuffer += msg.Text
@@ -341,6 +518,8 @@ func (m Model) View() string {
 		return m.renderCentered(m.renderAISummary())
 	case ModeSettings:
 		return m.renderCentered(m.settings.View())
+	case ModeConfirm, ModeReset:
+		return m.renderCentered(m.confirmModal.View())
 	}
 	return base
 }
@@ -372,6 +551,10 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	// Confirm modal for destructive actions.
+	if m.mode == ModeConfirm {
+		return m.handleConfirmKey(msg)
+	}
 	// Settings overlay.
 	if m.mode == ModeSettings {
 		return m.handleSettingsKey(msg)
@@ -384,6 +567,12 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.mode == ModeNewBranch {
 		return m.handleNewBranchKey(msg)
+	}
+	if m.mode == ModeRenameBranch {
+		return m.handleRenameBranchKey(msg)
+	}
+	if m.mode == ModeReset {
+		return m.handleResetKey(msg)
 	}
 
 	switch {
@@ -398,7 +587,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case key.Matches(msg, m.keymap.Escape):
 		return m.handleEscape()
-	case key.Matches(msg, m.keymap.Refresh):
+	case key.Matches(msg, m.keymap.Refresh) && m.focused != PanelBranches:
 		m.loading = true
 		m.loadingMsg = "Refreshing…"
 		return m, tea.Batch(m.loadStatus(), m.loadBranches(), m.loadCommits())
@@ -437,6 +626,34 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.settings.LoadConfig(m.cfg)
 		m.mode = ModeSettings
 		return m, nil
+	case key.Matches(msg, m.keymap.Tags):
+		// Open tags panel from anywhere (except when already in it)
+		if m.focused != PanelTags {
+			m.prevFocused = m.focused
+			m.focused = PanelTags
+			return m, m.loadTags()
+		}
+	case key.Matches(msg, m.keymap.Worktree):
+		if m.focused != PanelWorktree {
+			m.prevFocused = m.focused
+			m.focused = PanelWorktree
+			m.mode = ModeWorktree
+			return m, m.loadWorktrees()
+		}
+	case key.Matches(msg, m.keymap.Remotes):
+		if m.focused != PanelRemotes {
+			m.prevFocused = m.focused
+			m.focused = PanelRemotes
+			m.mode = ModeRemotes
+			return m, m.loadRemotes()
+		}
+	case key.Matches(msg, m.keymap.Bisect):
+		if m.focused != PanelBisect {
+			m.prevFocused = m.focused
+			m.focused = PanelBisect
+			m.mode = ModeBisect
+			return m, m.loadBisectStatus()
+		}
 	}
 
 	switch m.focused {
@@ -448,6 +665,20 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleReflogKey(msg)
 	case PanelPR:
 		return m.handlePRKey(msg)
+	case PanelTags:
+		return m.handleTagsKey(msg)
+	case PanelWorktree:
+		return m.handleWorktreeKey(msg)
+	case PanelInterRebase:
+		return m.handleInterRebaseKey(msg)
+	case PanelConflict:
+		return m.handleConflictKey(msg)
+	case PanelFileHistory:
+		return m.handleFileHistoryKey(msg)
+	case PanelRemotes:
+		return m.handleRemotesKey(msg)
+	case PanelBisect:
+		return m.handleBisectKey(msg)
 	case PanelFiles:
 		return m.handleFilesKey(msg)
 	case PanelBranches:
@@ -462,7 +693,9 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleEscape() (tea.Model, tea.Cmd) {
 	switch m.focused {
-	case PanelStash, PanelBlame, PanelReflog, PanelPR:
+	case PanelStash, PanelBlame, PanelReflog, PanelPR, PanelTags,
+		PanelWorktree, PanelInterRebase, PanelConflict, PanelFileHistory,
+		PanelRemotes, PanelBisect:
 		m.mode = ModeNormal
 		m.focused = m.prevFocused
 		return m, nil
@@ -479,30 +712,87 @@ func (m Model) handleFilesKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keymap.Up):
 		m.files.MoveUp()
 		return m, m.loadDiffForCursor()
+	case msg.String() == "ctrl+ ":
+		// Multi-select toggle
+		m.files.ToggleSelect()
+		m.files.MoveDown()
+		return m, nil
 	case key.Matches(msg, m.keymap.Stage):
+		if m.files.HasSelection() {
+			return m, m.stageSelected()
+		}
 		return m, m.toggleStage()
 	case key.Matches(msg, m.keymap.StageAll):
 		return m, m.stageAll()
 	case key.Matches(msg, m.keymap.Discard):
-		return m, m.discardFile()
+		f := m.files.CurrentFile()
+		if f == nil {
+			return m, nil
+		}
+		path := f.Path
+		m.confirmModal = widgets.NewConfirmModal(
+			"Discard changes?",
+			"Permanently discard all changes to:\n  "+path+"\n\nThis cannot be undone.",
+		)
+		m.confirmModal.Show()
+		m.mode = ModeConfirm
+		m.confirmAction = func() tea.Cmd {
+			return func() tea.Msg {
+				return GitOperationMsg{Op: "Discard " + path, Err: m.repo.DiscardFile(path)}
+			}
+		}
+		return m, nil
 	case key.Matches(msg, m.keymap.Commit):
 		m.mode = ModeCommit
 		m.commitMsg.Focus()
 		return m, nil
+	case msg.String() == "A":
+		// Amend HEAD commit — load its message and open commit form
+		return m, m.loadHeadCommit()
 	case key.Matches(msg, m.keymap.Push):
+		m.loading = true
+		m.loadingMsg = "Pushing…"
+		m.setStatus("Pushing to remote…", false)
 		return m, m.push()
 	case key.Matches(msg, m.keymap.Pull):
+		m.loading = true
+		m.loadingMsg = "Pulling…"
+		m.setStatus("Pulling from remote…", false)
 		return m, m.pull()
 	case key.Matches(msg, m.keymap.Fetch):
+		m.loading = true
+		m.loadingMsg = "Fetching…"
+		m.setStatus("Fetching remotes…", false)
 		return m, m.fetch()
+	case msg.String() == "F":
+		// Force push with lease (safe force push for rebase workflows)
+		m.loading = true
+		m.setStatus("Force pushing (with-lease)…", false)
+		return m, m.forcePushWithLease()
 	case key.Matches(msg, m.keymap.ToggleDiffStaged):
 		m.diffStaged = !m.diffStaged
 		return m, m.loadDiffForCursor()
+	case key.Matches(msg, m.keymap.FileHistory):
+		f := m.files.CurrentFile()
+		if f != nil {
+			path := f.Path
+			m.prevFocused = m.focused
+			return m, func() tea.Msg {
+				commits, err := m.repo.LogFile(path, 100)
+				return GitFileHistoryMsg{Path: path, Commits: commits, Err: err}
+			}
+		}
 	case msg.String() == "z":
 		m.prevFocused = m.focused
 		m.focused = PanelStash
 		m.mode = ModeStash
 		return m, m.loadStashes()
+	case msg.String() == "Z":
+		// Stash all current changes
+		m.setStatus("Stashing changes…", false)
+		return m, func() tea.Msg {
+			return GitOperationMsg{Op: "Stash", Err: m.repo.StashPush("")}
+		}
 	case msg.String() == "P":
 		return m.openPRPanel()
 	}
@@ -526,15 +816,94 @@ func (m Model) handleBranchesKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case key.Matches(msg, m.keymap.Delete):
 		b := m.branches.CurrentBranch()
-		if b != nil && !b.IsCurrent {
-			return m, m.deleteBranch(b.Name)
+		if b == nil || b.IsCurrent {
+			return m, nil
 		}
+		name := b.Name
+		m.confirmModal = widgets.NewConfirmModal(
+			"Delete branch?",
+			"Delete local branch '"+name+"'?\n\nRemote branch is not affected.",
+		)
+		m.confirmModal.Show()
+		m.mode = ModeConfirm
+		m.confirmAction = func() tea.Cmd { return m.deleteBranch(name) }
+		return m, nil
 	case key.Matches(msg, m.keymap.Push):
+		m.loading = true
+		m.loadingMsg = "Pushing…"
+		m.setStatus("Pushing to remote…", false)
 		return m, m.push()
 	case key.Matches(msg, m.keymap.Pull):
+		m.loading = true
+		m.loadingMsg = "Pulling…"
+		m.setStatus("Pulling from remote…", false)
 		return m, m.pull()
 	case msg.String() == "P":
 		return m.openPRPanel()
+	case key.Matches(msg, m.keymap.Merge):
+		b := m.branches.CurrentBranch()
+		if b == nil || b.IsCurrent {
+			return m, nil
+		}
+		name := b.Name
+		if m.repo.MergeInProgress() {
+			return m, func() tea.Msg {
+				return GitOperationMsg{Op: "Merge abort", Err: m.repo.MergeAbort()}
+			}
+		}
+		m.confirmModal = widgets.NewConfirmModal(
+			"Merge branch?",
+			"Merge '"+name+"' into current branch.",
+		)
+		m.confirmModal.Show()
+		m.mode = ModeConfirm
+		m.confirmAction = func() tea.Cmd {
+			return func() tea.Msg {
+				return GitOperationMsg{Op: "Merge " + name, Err: m.repo.MergeBranch(name)}
+			}
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.Rebase):
+		b := m.branches.CurrentBranch()
+		if b == nil || b.IsCurrent {
+			return m, nil
+		}
+		name := b.Name
+		if m.repo.RebaseInProgress() {
+			return m, func() tea.Msg {
+				return GitOperationMsg{Op: "Rebase abort", Err: m.repo.RebaseAbort()}
+			}
+		}
+		m.confirmModal = widgets.NewConfirmModal(
+			"Rebase onto branch?",
+			"Rebase current branch onto '"+name+"'.",
+		)
+		m.confirmModal.Show()
+		m.mode = ModeConfirm
+		m.confirmAction = func() tea.Cmd {
+			return func() tea.Msg {
+				return GitOperationMsg{Op: "Rebase onto " + name, Err: m.repo.RebaseBranch(name)}
+			}
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.RenameBranch):
+		b := m.branches.CurrentBranch()
+		if b == nil {
+			return m, nil
+		}
+		m.mode = ModeRenameBranch
+		m.branches.ShowRenameBranchModal(b.Name)
+		return m, nil
+	case key.Matches(msg, m.keymap.OpenBrowser):
+		b := m.branches.CurrentBranch()
+		if b != nil {
+			return m, m.openBranchInBrowser(b.Name)
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.Refresh):
+		m.loading = true
+		m.loadingMsg = "Refreshing…"
+		return m, tea.Batch(m.loadStatus(), m.loadBranches(), m.loadCommits())
 	}
 	return m, nil
 }
@@ -575,6 +944,81 @@ func (m Model) handleCommitsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.focused = PanelReflog
 		m.mode = ModeReflog
 		return m, m.loadReflog()
+	case msg.String() == "y":
+		// Copy commit hash to clipboard
+		c := m.commits.CurrentCommit()
+		if c != nil {
+			return m, m.copyToClipboard(c.Hash, c.ShortHash)
+		}
+	case msg.String() == "A":
+		// Amend HEAD commit — only makes sense for the top commit
+		return m, m.loadHeadCommit()
+	case key.Matches(msg, m.keymap.CherryPick):
+		c := m.commits.CurrentCommit()
+		if c != nil {
+			hash, short, subject := c.Hash, c.ShortHash, c.Subject
+			m.confirmModal = widgets.NewConfirmModal(
+				"Cherry-pick commit?",
+				"Apply "+short+" to current branch:\n  "+subject,
+			)
+			m.confirmModal.Show()
+			m.mode = ModeConfirm
+			m.confirmAction = func() tea.Cmd {
+				return func() tea.Msg {
+					return GitOperationMsg{Op: "Cherry-pick " + short, Err: m.repo.CherryPick(hash)}
+				}
+			}
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.Revert):
+		c := m.commits.CurrentCommit()
+		if c != nil {
+			hash, short, subject := c.Hash, c.ShortHash, c.Subject
+			m.confirmModal = widgets.NewConfirmModal(
+				"Revert commit?",
+				"Create a new commit that undoes:\n  "+short+"  "+subject,
+			)
+			m.confirmModal.Show()
+			m.mode = ModeConfirm
+			m.confirmAction = func() tea.Cmd {
+				return func() tea.Msg {
+					return GitOperationMsg{Op: "Revert " + short, Err: m.repo.RevertCommit(hash)}
+				}
+			}
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.Reset):
+		c := m.commits.CurrentCommit()
+		if c != nil {
+			m.resetTargetRef = c.Hash
+			m.confirmModal = widgets.NewConfirmModal(
+				"Reset HEAD to "+c.ShortHash+"?",
+				"Choose reset type:\n  [s] soft  — keep staged\n  [m] mixed — unstage changes\n  [h] hard  — discard all",
+			)
+			m.confirmModal.Show()
+			m.mode = ModeReset
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.InterRebase):
+		c := m.commits.CurrentCommit()
+		if c != nil {
+			hash := c.Hash
+			return m, func() tea.Msg {
+				entries, todoPath, err := m.repo.StartInteractiveRebase(hash)
+				return GitRebaseTodoMsg{Entries: entries, TodoPath: todoPath, Err: err}
+			}
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.OpenBrowser):
+		c := m.commits.CurrentCommit()
+		if c != nil && m.forge != nil {
+			return m, m.openCommitInBrowser(c.Hash)
+		}
+		return m, nil
+	case key.Matches(msg, m.keymap.Tags):
+		m.prevFocused = m.focused
+		m.focused = PanelTags
+		return m, m.loadTags()
 	}
 	return m, nil
 }
@@ -711,6 +1155,68 @@ func (m Model) handlePRKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m Model) handleTagsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// ModeNewTag: forward to modal input
+	if m.mode == ModeNewTag {
+		switch msg.String() {
+		case "esc":
+			m.mode = ModeNormal
+			m.tags.HideModal()
+		case "enter":
+			name := m.tags.ModalInput()
+			m.tags.HideModal()
+			m.mode = ModeNormal
+			if name != "" {
+				return m, func() tea.Msg {
+					return GitOperationMsg{Op: "Create tag " + name, Err: m.repo.CreateTag(name)}
+				}
+			}
+		default:
+			return m, m.tags.UpdateModalInput(msg)
+		}
+		return m, nil
+	}
+
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+	case key.Matches(msg, m.keymap.Down):
+		m.tags.MoveDown()
+	case key.Matches(msg, m.keymap.Up):
+		m.tags.MoveUp()
+	case key.Matches(msg, m.keymap.NewBranch): // 'n' — new tag
+		m.tags.ShowNewTagModal()
+		m.mode = ModeNewTag
+	case key.Matches(msg, m.keymap.Delete): // 'D' — delete tag
+		t := m.tags.CurrentTag()
+		if t != nil {
+			name := t.Name
+			m.confirmModal = widgets.NewConfirmModal(
+				"Delete tag?",
+				"Delete local tag '"+name+"'?\n\nThis does not affect the remote.",
+			)
+			m.confirmModal.Show()
+			m.mode = ModeConfirm
+			m.confirmAction = func() tea.Cmd {
+				return func() tea.Msg {
+					return GitOperationMsg{Op: "Delete tag " + name, Err: m.repo.DeleteTag(name)}
+				}
+			}
+		}
+	case key.Matches(msg, m.keymap.Push): // 'P' — push tag to origin
+		t := m.tags.CurrentTag()
+		if t != nil {
+			name := t.Name
+			m.setStatus("Pushing tag "+name+"…", false)
+			return m, func() tea.Msg {
+				return GitOperationMsg{Op: "Push tag " + name, Err: m.repo.PushTag("origin", name)}
+			}
+		}
+	}
+	return m, nil
+}
+
 func (m Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.settings.IsEditing() {
 		switch msg.String() {
@@ -781,6 +1287,7 @@ func (m Model) handleCommitKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
 		m.mode = ModeNormal
+		m.amendMode = false
 		m.commitMsg.Blur()
 		m.commitMsg.Reset()
 		m.aiBuffer = ""
@@ -830,6 +1337,326 @@ func (m Model) handleNewBranchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	return m, m.branches.UpdateModalInput(msg)
+}
+
+func (m Model) handleRenameBranchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		m.mode = ModeNormal
+		m.branches.HideModal()
+		return m, nil
+	case "enter":
+		name := m.branches.ModalInput()
+		m.mode = ModeNormal
+		m.branches.HideModal()
+		if name != "" {
+			return m, func() tea.Msg {
+				return GitOperationMsg{Op: "Rename branch to " + name, Err: m.repo.RenameBranch(name)}
+			}
+		}
+		return m, nil
+	}
+	return m, m.branches.UpdateModalInput(msg)
+}
+
+func (m Model) handleResetKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	ref := m.resetTargetRef
+	switch msg.String() {
+	case "s":
+		m.mode = ModeNormal
+		m.confirmModal.Hide()
+		return m, func() tea.Msg {
+			return GitOperationMsg{Op: "Reset soft to " + ref[:7], Err: m.repo.ResetSoft(ref)}
+		}
+	case "m":
+		m.mode = ModeNormal
+		m.confirmModal.Hide()
+		return m, func() tea.Msg {
+			return GitOperationMsg{Op: "Reset mixed to " + ref[:7], Err: m.repo.ResetMixed(ref)}
+		}
+	case "h":
+		m.mode = ModeNormal
+		m.confirmModal.Hide()
+		return m, func() tea.Msg {
+			return GitOperationMsg{Op: "Reset hard to " + ref[:7], Err: m.repo.ResetHard(ref)}
+		}
+	case "esc", "q", "n":
+		m.mode = ModeNormal
+		m.confirmModal.Hide()
+		m.setStatus("Cancelled", false)
+	}
+	return m, nil
+}
+
+func (m Model) handleWorktreeKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+	case key.Matches(msg, m.keymap.Down):
+		m.worktree.MoveDown()
+	case key.Matches(msg, m.keymap.Up):
+		m.worktree.MoveUp()
+	case key.Matches(msg, m.keymap.Delete):
+		wt := m.worktree.CurrentWorktree()
+		if wt != nil && !wt.IsMain {
+			path := wt.Path
+			m.confirmModal = widgets.NewConfirmModal(
+				"Remove worktree?",
+				"Remove worktree at:\n  "+path,
+			)
+			m.confirmModal.Show()
+			m.mode = ModeConfirm
+			m.confirmAction = func() tea.Cmd {
+				return func() tea.Msg {
+					return GitOperationMsg{Op: "Remove worktree", Err: m.repo.RemoveWorktree(path)}
+				}
+			}
+		}
+	case key.Matches(msg, m.keymap.Checkout):
+		wt := m.worktree.CurrentWorktree()
+		if wt != nil {
+			m.setStatus("Worktree: "+wt.Path, false)
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleInterRebaseKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		_ = m.repo.RebaseAbort()
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+		m.setStatus("Rebase aborted", false)
+	case key.Matches(msg, m.keymap.Down):
+		m.rebase.MoveDown()
+	case key.Matches(msg, m.keymap.Up):
+		m.rebase.MoveUp()
+	case msg.String() == "a":
+		m.rebase.CycleAction()
+	case msg.String() == "K":
+		m.rebase.MoveEntryUp()
+	case msg.String() == "J":
+		m.rebase.MoveEntryDown()
+	case key.Matches(msg, m.keymap.Confirm):
+		todoPath := m.rebase.TodoPath
+		entries := m.rebase.Entries
+		return m, func() tea.Msg {
+			if err := git.WriteRebaseTodo(todoPath, entries); err != nil {
+				return GitOperationMsg{Op: "Interactive rebase", Err: err}
+			}
+			return GitOperationMsg{Op: "Interactive rebase", Err: m.repo.ContinueRebase()}
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleConflictKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+	case key.Matches(msg, m.keymap.Down):
+		m.conflict.MoveDown()
+	case key.Matches(msg, m.keymap.Up):
+		m.conflict.MoveUp()
+	case msg.String() == "o":
+		path := m.conflict.FilePath
+		return m, func() tea.Msg {
+			if err := git.ResolveConflict(path, "ours"); err != nil {
+				return GitOperationMsg{Op: "Resolve ours", Err: err}
+			}
+			blocks, _ := reloadConflict(path)
+			return GitConflictMsg{Path: path, Blocks: blocks}
+		}
+	case msg.String() == "t":
+		path := m.conflict.FilePath
+		return m, func() tea.Msg {
+			if err := git.ResolveConflict(path, "theirs"); err != nil {
+				return GitOperationMsg{Op: "Resolve theirs", Err: err}
+			}
+			blocks, _ := reloadConflict(path)
+			return GitConflictMsg{Path: path, Blocks: blocks}
+		}
+	case msg.String() == "O":
+		path := m.conflict.FilePath
+		return m, func() tea.Msg {
+			if err := git.ResolveConflict(path, "ours"); err != nil {
+				return GitOperationMsg{Op: "Resolve all ours", Err: err}
+			}
+			if err := m.repo.MarkResolved(path); err != nil {
+				return GitOperationMsg{Op: "Mark resolved", Err: err}
+			}
+			return GitOperationMsg{Op: "Resolved with ours"}
+		}
+	case msg.String() == "T":
+		path := m.conflict.FilePath
+		return m, func() tea.Msg {
+			if err := git.ResolveConflict(path, "theirs"); err != nil {
+				return GitOperationMsg{Op: "Resolve all theirs", Err: err}
+			}
+			if err := m.repo.MarkResolved(path); err != nil {
+				return GitOperationMsg{Op: "Mark resolved", Err: err}
+			}
+			return GitOperationMsg{Op: "Resolved with theirs"}
+		}
+	case key.Matches(msg, m.keymap.Confirm):
+		path := m.conflict.FilePath
+		return m, func() tea.Msg {
+			return GitOperationMsg{Op: "Mark resolved " + path, Err: m.repo.MarkResolved(path)}
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleFileHistoryKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+	case key.Matches(msg, m.keymap.Down):
+		m.fileHistory.MoveDown()
+		return m, m.loadFileHistoryDiff()
+	case key.Matches(msg, m.keymap.Up):
+		m.fileHistory.MoveUp()
+		return m, m.loadFileHistoryDiff()
+	case key.Matches(msg, m.keymap.PageDown):
+		m.fileHistory.PageDown()
+		return m, m.loadFileHistoryDiff()
+	case key.Matches(msg, m.keymap.PageUp):
+		m.fileHistory.PageUp()
+		return m, m.loadFileHistoryDiff()
+	case key.Matches(msg, m.keymap.Confirm):
+		return m, m.loadFileHistoryDiff()
+	}
+	return m, nil
+}
+
+func reloadConflict(path string) ([]git.ConflictBlock, error) {
+	blocks, _, err := git.ConflictedFile(path)
+	return blocks, err
+}
+
+func (m Model) handleRemotesKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.mode == ModeAddRemote {
+		switch msg.String() {
+		case "esc":
+			m.mode = ModeRemotes
+			m.remotes.HideModal()
+		case "enter":
+			val := m.remotes.ModalInput()
+			if m.remotes.IsAddingURL() {
+				// Confirm: add the remote
+				name := m.remotes.RemoteName()
+				url := val
+				m.remotes.HideModal()
+				m.mode = ModeRemotes
+				return m, func() tea.Msg {
+					return GitOperationMsg{Op: "Add remote " + name, Err: m.repo.AddRemote(name, url)}
+				}
+			} else if val != "" {
+				// Advance to URL step
+				m.remotes.AdvanceToURL(val)
+			}
+		default:
+			return m, m.remotes.UpdateModalInput(msg)
+		}
+		return m, nil
+	}
+
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+	case key.Matches(msg, m.keymap.Down):
+		m.remotes.MoveDown()
+	case key.Matches(msg, m.keymap.Up):
+		m.remotes.MoveUp()
+	case key.Matches(msg, m.keymap.NewBranch): // 'n' = add remote
+		m.remotes.ShowAddModal()
+		m.mode = ModeAddRemote
+	case key.Matches(msg, m.keymap.Delete): // 'D' = remove remote
+		r := m.remotes.CurrentRemote()
+		if r != nil {
+			name := r.Name
+			m.confirmModal = widgets.NewConfirmModal(
+				"Remove remote?",
+				"Remove remote '"+name+"'?\n\nThis does not affect the remote server.",
+			)
+			m.confirmModal.Show()
+			m.mode = ModeConfirm
+			m.confirmAction = func() tea.Cmd {
+				return func() tea.Msg {
+					return GitOperationMsg{Op: "Remove remote " + name, Err: m.repo.RemoveRemote(name)}
+				}
+			}
+		}
+	case key.Matches(msg, m.keymap.Fetch): // 'f' = fetch this remote
+		r := m.remotes.CurrentRemote()
+		if r != nil {
+			name := r.Name
+			return m, func() tea.Msg {
+				return GitOperationMsg{Op: "Fetch " + name, Err: m.repo.FetchRemote(name)}
+			}
+		}
+	case key.Matches(msg, m.keymap.Checkout): // enter = show URL in status
+		r := m.remotes.CurrentRemote()
+		if r != nil {
+			m.setStatus(r.Name+": "+r.FetchURL, false)
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleBisectKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keymap.Escape):
+		m.mode = ModeNormal
+		m.focused = m.prevFocused
+	case key.Matches(msg, m.keymap.Down):
+		m.bisect.MoveDown()
+	case key.Matches(msg, m.keymap.Up):
+		m.bisect.MoveUp()
+	case msg.String() == "s": // start
+		if !m.bisect.Status.InProgress {
+			return m, func() tea.Msg {
+				if err := m.repo.BisectStart(); err != nil {
+					return GitOperationMsg{Op: "Bisect start", Err: err}
+				}
+				return GitBisectMsg{Status: m.repo.BisectGetStatus()}
+			}
+		}
+	case msg.String() == "g": // mark good
+		return m, func() tea.Msg {
+			if err := m.repo.BisectGood(""); err != nil {
+				return GitOperationMsg{Op: "Bisect good", Err: err}
+			}
+			return GitBisectMsg{Status: m.repo.BisectGetStatus()}
+		}
+	case msg.String() == "b": // mark bad
+		return m, func() tea.Msg {
+			if err := m.repo.BisectBad(""); err != nil {
+				return GitOperationMsg{Op: "Bisect bad", Err: err}
+			}
+			return GitBisectMsg{Status: m.repo.BisectGetStatus()}
+		}
+	case msg.String() == "k": // skip
+		return m, func() tea.Msg {
+			if err := m.repo.BisectSkip(); err != nil {
+				return GitOperationMsg{Op: "Bisect skip", Err: err}
+			}
+			return GitBisectMsg{Status: m.repo.BisectGetStatus()}
+		}
+	case msg.String() == "r": // reset
+		return m, func() tea.Msg {
+			if err := m.repo.BisectReset(); err != nil {
+				return GitOperationMsg{Op: "Bisect reset", Err: err}
+			}
+			return GitBisectMsg{Status: m.repo.BisectGetStatus()}
+		}
+	}
+	return m, nil
 }
 
 func (m Model) handleSearchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -901,7 +1728,7 @@ func (m Model) loadStatus() tea.Cmd {
 
 func (m Model) loadBranches() tea.Cmd {
 	return func() tea.Msg {
-		branches, err := m.repo.Branches()
+		branches, err := m.repo.BranchesWithTracking()
 		return GitBranchesMsg{Branches: branches, Err: err}
 	}
 }
@@ -984,6 +1811,96 @@ func (m Model) loadReflog() tea.Cmd {
 	}
 }
 
+func (m Model) loadTags() tea.Cmd {
+	return func() tea.Msg {
+		tags, err := m.repo.Tags()
+		return GitTagsMsg{Tags: tags, Err: err}
+	}
+}
+
+func (m Model) loadWorktrees() tea.Cmd {
+	return func() tea.Msg {
+		wts, err := m.repo.Worktrees()
+		return GitWorktreesMsg{Worktrees: wts, Err: err}
+	}
+}
+
+func (m Model) loadRemotes() tea.Cmd {
+	return func() tea.Msg {
+		remotes, err := m.repo.ListRemotes()
+		return GitRemotesMsg{Remotes: remotes, Err: err}
+	}
+}
+
+func (m Model) loadBisectStatus() tea.Cmd {
+	return func() tea.Msg {
+		return GitBisectMsg{Status: m.repo.BisectGetStatus()}
+	}
+}
+
+func (m Model) loadFileHistoryDiff() tea.Cmd {
+	c := m.fileHistory.CurrentCommit()
+	if c == nil {
+		return nil
+	}
+	hash := c.Hash
+	return func() tea.Msg {
+		fds, err := m.repo.DiffCommit(hash)
+		if err != nil {
+			return GitDiffMsg{Err: err}
+		}
+		var all []git.DiffHunk
+		for _, fd := range fds {
+			all = append(all, fd.Hunks...)
+		}
+		return GitDiffMsg{Hunks: all}
+	}
+}
+
+func (m Model) openBrowser(url string) tea.Cmd {
+	return func() tea.Msg {
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "darwin":
+			cmd = exec.Command("open", url)
+		case "windows":
+			cmd = exec.Command("cmd", "/c", "start", url)
+		default:
+			cmd = exec.Command("xdg-open", url)
+		}
+		if err := cmd.Run(); err != nil {
+			return StatusMsg{Text: "Cannot open browser: " + err.Error(), IsErr: true}
+		}
+		return StatusMsg{Text: "Opened in browser"}
+	}
+}
+
+func forgeWebBase(info forge.ForgeInfo) string {
+	return "https://" + info.Host + "/" + info.Owner + "/" + info.Repo
+}
+
+func (m Model) openCommitInBrowser(hash string) tea.Cmd {
+	if m.forge == nil {
+		return func() tea.Msg {
+			return StatusMsg{Text: "No forge detected — set GITHUB_TOKEN or GITLAB_TOKEN", IsErr: true}
+		}
+	}
+	info := m.forge.ForgeInfo()
+	url := forgeWebBase(info) + "/commit/" + hash
+	return m.openBrowser(url)
+}
+
+func (m Model) openBranchInBrowser(branch string) tea.Cmd {
+	if m.forge == nil {
+		return func() tea.Msg {
+			return StatusMsg{Text: "No forge detected — set GITHUB_TOKEN or GITLAB_TOKEN", IsErr: true}
+		}
+	}
+	info := m.forge.ForgeInfo()
+	url := forgeWebBase(info) + "/tree/" + branch
+	return m.openBrowser(url)
+}
+
 func (m Model) loadPRs() tea.Cmd {
 	if m.forge == nil {
 		return func() tea.Msg {
@@ -1022,6 +1939,21 @@ func (m Model) stageAll() tea.Cmd {
 	}
 }
 
+func (m Model) stageSelected() tea.Cmd {
+	files := m.files.SelectedFiles()
+	if len(files) == 0 {
+		return nil
+	}
+	paths := make([]string, len(files))
+	for i, f := range files {
+		paths[i] = f.Path
+	}
+	n := len(paths)
+	return func() tea.Msg {
+		return GitOperationMsg{Op: fmt.Sprintf("Stage %d files", n), Err: m.repo.Stage(paths...)}
+	}
+}
+
 func (m Model) discardFile() tea.Cmd {
 	f := m.files.CurrentFile()
 	if f == nil {
@@ -1057,13 +1989,105 @@ func (m Model) stageHunk(reverse bool) tea.Cmd {
 }
 
 func (m Model) doCommit(message string) tea.Cmd {
+	if m.amendMode {
+		return func() tea.Msg {
+			return GitOperationMsg{Op: "Amend", Err: m.repo.CommitAmend(message)}
+		}
+	}
 	return func() tea.Msg {
 		return GitOperationMsg{Op: "Commit", Err: m.repo.Commit(message)}
 	}
 }
 
+func (m Model) handleConfirmKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "enter":
+		m.mode = ModeNormal
+		m.confirmModal.Hide()
+		if m.confirmAction != nil {
+			return m, m.confirmAction()
+		}
+	case "n", "esc", "q":
+		m.mode = ModeNormal
+		m.confirmModal.Hide()
+		m.setStatus("Cancelled", false)
+	}
+	return m, nil
+}
+
+func (m Model) loadHeadCommit() tea.Cmd {
+	return func() tea.Msg {
+		c, err := m.repo.CommitDetail("HEAD")
+		if err != nil || c == nil {
+			return GitHeadCommitMsg{Err: fmt.Errorf("could not load HEAD commit")}
+		}
+		return GitHeadCommitMsg{Subject: c.Subject, Body: c.Body}
+	}
+}
+
+func (m Model) forcePushWithLease() tea.Cmd {
+	repo := m.repo
+	return func() tea.Msg {
+		branch, err := repo.CurrentBranch()
+		if err != nil {
+			return GitOperationMsg{Op: "Force push", Err: err}
+		}
+		if err := repo.PushForceWithLease("origin", branch); err != nil {
+			return GitOperationMsg{Op: "Force push", Err: err}
+		}
+		return GitOperationMsg{Op: "Force push " + branch + " → origin"}
+	}
+}
+
+func (m Model) copyToClipboard(hash, short string) tea.Cmd {
+	return func() tea.Msg {
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "darwin":
+			cmd = exec.Command("pbcopy")
+		case "windows":
+			cmd = exec.Command("clip")
+		default:
+			if _, err := exec.LookPath("xclip"); err == nil {
+				cmd = exec.Command("xclip", "-selection", "clipboard")
+			} else {
+				cmd = exec.Command("xsel", "--clipboard", "--input")
+			}
+		}
+		cmd.Stdin = strings.NewReader(hash)
+		if err := cmd.Run(); err != nil {
+			return StatusMsg{Text: "Clipboard unavailable: " + err.Error(), IsErr: true}
+		}
+		return StatusMsg{Text: "Copied " + short + " to clipboard"}
+	}
+}
+
 func (m Model) push() tea.Cmd {
-	return func() tea.Msg { return GitOperationMsg{Op: "Push", Err: m.repo.Push()} }
+	repo := m.repo
+	return func() tea.Msg {
+		// Check if current branch has an upstream set.
+		branch, err := repo.CurrentBranch()
+		if err != nil {
+			return GitOperationMsg{Op: "Push", Err: err}
+		}
+		// Try a normal push first.
+		pushErr := repo.Push()
+		if pushErr == nil {
+			return GitOperationMsg{Op: "Push " + branch}
+		}
+		// If no upstream, auto-set it to origin/<branch>.
+		errStr := pushErr.Error()
+		if strings.Contains(errStr, "no upstream") ||
+			strings.Contains(errStr, "set-upstream") ||
+			strings.Contains(errStr, "has no upstream") {
+			setErr := repo.PushSetUpstream("origin", branch)
+			if setErr != nil {
+				return GitOperationMsg{Op: "Push " + branch, Err: setErr}
+			}
+			return GitOperationMsg{Op: "Push " + branch + " → origin"}
+		}
+		return GitOperationMsg{Op: "Push", Err: pushErr}
+	}
 }
 
 func (m Model) pull() tea.Cmd {
@@ -1192,34 +2216,41 @@ func (m Model) renderAISummary() string {
 }
 
 func (m Model) renderHeader() string {
-	// Left: repo + branch
-	repoStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#181825")).
-		Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	branchStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#181825")).
-		Foreground(lipgloss.Color("#a6e3a1"))
-	mutedStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#181825")).
-		Foreground(lipgloss.Color("#45475a"))
+	bg := lipgloss.Color("#181825")
+	repoStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#89b4fa")).Bold(true)
+	branchStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#a6e3a1"))
+	mutedStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#45475a"))
 
-	repoName := repoStyle.Render("  " + m.repo.RepoName())
+	repoName := repoStyle.Render(" ⬡ " + m.repo.RepoName())
 	branch, _ := m.repo.CurrentBranch()
 	sep := mutedStyle.Render("  ⎇ ")
 	branchStr := branchStyle.Render(branch)
 
 	extra := ""
 	if m.loading {
-		extra = lipgloss.NewStyle().Background(lipgloss.Color("#181825")).
+		extra += lipgloss.NewStyle().Background(bg).
 			Foreground(lipgloss.Color("#f9e2af")).Render("   ⟳ " + m.loadingMsg)
 	}
 	if m.mode == ModeSearch {
-		extra += lipgloss.NewStyle().Background(lipgloss.Color("#181825")).
+		extra += lipgloss.NewStyle().Background(bg).
 			Foreground(lipgloss.Color("#cba6f7")).Render("   / " + m.searchInput.Value())
 	}
 	if m.aiGenerating {
-		extra += lipgloss.NewStyle().Background(lipgloss.Color("#181825")).
+		extra += lipgloss.NewStyle().Background(bg).
 			Foreground(lipgloss.Color("#94e2d5")).Render("   ✦ AI…")
+	}
+	// In-progress git operation badges
+	if m.repo.MergeInProgress() {
+		extra += "  " + lipgloss.NewStyle().
+			Background(lipgloss.Color("#f9e2af")).Foreground(lipgloss.Color("#1e1e2e")).
+			Bold(true).Padding(0, 1).Render("MERGE") +
+			lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#585b70")).Render(" m:abort")
+	}
+	if m.repo.RebaseInProgress() {
+		extra += "  " + lipgloss.NewStyle().
+			Background(lipgloss.Color("#cba6f7")).Foreground(lipgloss.Color("#1e1e2e")).
+			Bold(true).Padding(0, 1).Render("REBASE") +
+			lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#585b70")).Render(" esc:abort")
 	}
 
 	forgeStr := ""
@@ -1238,8 +2269,8 @@ func (m Model) renderHeader() string {
 	if pad < 1 {
 		pad = 1
 	}
-	bg := lipgloss.NewStyle().Background(lipgloss.Color("#181825"))
-	return bg.Width(m.width).Render(left + strings.Repeat(" ", pad) + right)
+	barStyle := lipgloss.NewStyle().Background(bg)
+	return barStyle.Width(m.width).Render(left + strings.Repeat(" ", pad) + right)
 }
 
 func (m Model) renderBody() string {
@@ -1258,6 +2289,40 @@ func (m Model) renderBody() string {
 			hint = "PULL REQUESTS  — set GITHUB_TOKEN or GITLAB_TOKEN  esc:close"
 		}
 		return m.renderOverlay(hint, m.pr.View(), layout)
+	case PanelTags:
+		tagHint := "TAGS  n:new  D:delete  P:push to remote  esc:close"
+		if m.mode == ModeNewTag {
+			return m.renderCentered(m.tags.ModalView())
+		}
+		return m.renderOverlay(tagHint, m.tags.View(), layout)
+	case PanelWorktree:
+		hint := "WORKTREES  enter:show path  D:remove  esc:close"
+		return m.renderOverlay(hint, m.worktree.View(), layout)
+	case PanelInterRebase:
+		hint := "INTERACTIVE REBASE  a:cycle action  K/J:reorder  enter:apply  esc:abort"
+		return m.renderOverlay(hint, m.rebase.View(), layout)
+	case PanelConflict:
+		hint := "CONFLICTS  o:ours  t:theirs  O:all ours  T:all theirs  enter:mark resolved  esc:close"
+		return m.renderOverlay(hint, m.conflict.View(), layout)
+	case PanelFileHistory:
+		fname := m.fileHistoryPath
+		hint := "HISTORY: " + fname + "  ↑↓:navigate  enter:show diff  esc:close"
+		return m.renderOverlay(hint, m.fileHistory.View(), layout)
+	case PanelRemotes:
+		hint := "REMOTES  n:add  D:remove  f:fetch  enter:show URL  esc:close"
+		if m.mode == ModeAddRemote {
+			return m.renderCentered(m.remotes.ModalView())
+		}
+		return m.renderOverlay(hint, m.remotes.View(), layout)
+	case PanelBisect:
+		bisectStatus := ""
+		if m.bisect.Status.InProgress {
+			bisectStatus = "  g:good  b:bad  k:skip  r:reset"
+		} else {
+			bisectStatus = "  s:start"
+		}
+		hint := "GIT BISECT" + bisectStatus + "  esc:close"
+		return m.renderOverlay(hint, m.bisect.View(), layout)
 	}
 
 	if m.mode == ModeCommit || m.mode == ModeAIGenerating {
@@ -1331,7 +2396,13 @@ func (m Model) renderFilesPanel(width, height int) string {
 	if stats != "" {
 		statsStr = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorMuted)).Render("  " + stats)
 	}
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" FILES") + statsStr +
+	selStr := ""
+	if m.files.HasSelection() {
+		n := m.files.SelectionCount()
+		selStr = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorGreen)).Bold(true).
+			Render(fmt.Sprintf("  ◆ %d selected", n))
+	}
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ▸ FILES") + statsStr + selStr +
 		lipgloss.NewStyle().Foreground(lipgloss.Color(ColorOverlay)).Render("  [1]")
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).BorderForeground(bc).
@@ -1342,10 +2413,18 @@ func (m Model) renderFilesPanel(width, height int) string {
 func (m Model) renderBranchesPanel(width, height int) string {
 	focused := m.focused == PanelBranches && m.mode == ModeNormal
 	bc, tc := panelColors(focused)
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" BRANCHES") +
+
+	mergeHint := ""
+	if m.repo.MergeInProgress() {
+		mergeHint = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorYellow)).Render("  ⚡ merge")
+	} else if m.repo.RebaseInProgress() {
+		mergeHint = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorPurple)).Render("  ⚡ rebase")
+	}
+
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ⎇ BRANCHES") + mergeHint +
 		lipgloss.NewStyle().Foreground(lipgloss.Color(ColorOverlay)).Render("  [2]")
 	inner := m.branches.View()
-	if m.mode == ModeNewBranch {
+	if m.mode == ModeNewBranch || m.mode == ModeRenameBranch {
 		inner += "\n" + m.branches.ModalView()
 	}
 	return lipgloss.NewStyle().
@@ -1362,7 +2441,7 @@ func (m Model) renderCommitsPanel(width, height int) string {
 		extra = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTeal)).Render("  graph") +
 			lipgloss.NewStyle().Foreground(lipgloss.Color(ColorOverlay)).Render("  [3]")
 	}
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" COMMITS") + extra
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ● COMMITS") + extra
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).BorderForeground(bc).
 		Width(width - 2).Height(height - 2).
@@ -1380,7 +2459,7 @@ func (m Model) renderDiffPanel(width, height int) string {
 		extra += lipgloss.NewStyle().Foreground(lipgloss.Color(ColorMuted)).
 			Render("  " + m.diff.ScrollInfo())
 	}
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" DIFF") + extra
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ≋ DIFF") + extra
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).BorderForeground(bc).
 		Width(width - 2).Height(height - 2).
@@ -1441,13 +2520,15 @@ func (m Model) renderFooter() string {
 		switch m.focused {
 		case PanelFiles:
 			hints = []widgets.KeyHint{
-				{Key: "↑↓", Desc: "navigate"},
 				{Key: "space", Desc: "stage"},
 				{Key: "a", Desc: "stage all"},
 				{Key: "c", Desc: "commit"},
-				{Key: "P", Desc: "PRs"},
-				{Key: "z", Desc: "stash"},
-				{Key: "S", Desc: "staged diff"},
+				{Key: "L", Desc: "file history"},
+				{Key: "A", Desc: "amend"},
+				{Key: "P", Desc: "push"},
+				{Key: "p", Desc: "pull"},
+				{Key: "Z", Desc: "stash"},
+				{Key: "d", Desc: "discard"},
 			}
 		case PanelDiff:
 			hints = []widgets.KeyHint{
@@ -1460,17 +2541,87 @@ func (m Model) renderFooter() string {
 		case PanelCommits:
 			hints = []widgets.KeyHint{
 				{Key: "↑↓", Desc: "navigate"},
+				{Key: "y", Desc: "copy hash"},
+				{Key: "C", Desc: "cherry-pick"},
+				{Key: "v", Desc: "revert"},
+				{Key: "X", Desc: "reset"},
+				{Key: "i", Desc: "interactive rebase"},
+				{Key: "o", Desc: "browser"},
+				{Key: "A", Desc: "amend HEAD"},
 				{Key: "g", Desc: "graph"},
 				{Key: "b", Desc: "blame"},
-				{Key: "R", Desc: "reflog"},
-				{Key: "P", Desc: "PRs"},
+			}
+		case PanelTags:
+			hints = []widgets.KeyHint{
+				{Key: "↑↓", Desc: "navigate"},
+				{Key: "n", Desc: "new tag"},
+				{Key: "D", Desc: "delete"},
+				{Key: "P", Desc: "push"},
+				{Key: "esc", Desc: "close"},
+			}
+		case PanelRemotes:
+			hints = []widgets.KeyHint{
+				{Key: "↑↓", Desc: "navigate"},
+				{Key: "n", Desc: "add"},
+				{Key: "D", Desc: "remove"},
+				{Key: "f", Desc: "fetch"},
+				{Key: "enter", Desc: "show URL"},
+				{Key: "esc", Desc: "close"},
+			}
+		case PanelBisect:
+			if m.bisect.Status.InProgress {
+				hints = []widgets.KeyHint{
+					{Key: "g", Desc: "good"},
+					{Key: "b", Desc: "bad"},
+					{Key: "k", Desc: "skip"},
+					{Key: "r", Desc: "reset"},
+					{Key: "esc", Desc: "close"},
+				}
+			} else {
+				hints = []widgets.KeyHint{
+					{Key: "s", Desc: "start bisect"},
+					{Key: "esc", Desc: "close"},
+				}
+			}
+		case PanelWorktree:
+			hints = []widgets.KeyHint{
+				{Key: "↑↓", Desc: "navigate"},
+				{Key: "enter", Desc: "show path"},
+				{Key: "D", Desc: "remove"},
+				{Key: "esc", Desc: "close"},
+			}
+		case PanelInterRebase:
+			hints = []widgets.KeyHint{
+				{Key: "↑↓", Desc: "navigate"},
+				{Key: "a", Desc: "cycle action"},
+				{Key: "K/J", Desc: "reorder"},
+				{Key: "enter", Desc: "apply"},
+				{Key: "esc", Desc: "abort"},
+			}
+		case PanelConflict:
+			hints = []widgets.KeyHint{
+				{Key: "↑↓", Desc: "navigate"},
+				{Key: "o/t", Desc: "ours/theirs"},
+				{Key: "O/T", Desc: "all ours/theirs"},
+				{Key: "enter", Desc: "mark resolved"},
+				{Key: "esc", Desc: "close"},
+			}
+		case PanelFileHistory:
+			hints = []widgets.KeyHint{
+				{Key: "↑↓", Desc: "navigate"},
+				{Key: "enter", Desc: "show diff"},
+				{Key: "esc", Desc: "close"},
 			}
 		case PanelBranches:
 			hints = []widgets.KeyHint{
 				{Key: "↑↓", Desc: "navigate"},
 				{Key: "enter", Desc: "checkout"},
 				{Key: "n", Desc: "new"},
+				{Key: "R", Desc: "rename"},
 				{Key: "D", Desc: "delete"},
+				{Key: "m", Desc: "merge"},
+				{Key: "r", Desc: "rebase"},
+				{Key: "o", Desc: "browser"},
 				{Key: "P/p", Desc: "push/pull"},
 			}
 		default:
@@ -1491,6 +2642,10 @@ func (m Model) renderFooter() string {
 	sb := widgets.NewStatusBar(m.width)
 	sb.Hints = hints
 	sb.Extra = m.statusLine()
+	// Show bisect in-progress pill
+	if m.repo.BisectInProgress() {
+		sb.ModePill = widgets.ModePillStyle("BISECT", "#1e1e2e", "#94e2d5")
+	}
 	return sb.View()
 }
 
@@ -1547,6 +2702,13 @@ func (m *Model) rebuildPanels() {
 	m.blame = panels.NewBlameModel(m.width-2, panelH)
 	m.reflog = panels.NewReflogModel(m.width-2, panelH)
 	m.pr = panels.NewPRModel(m.width-2, panelH)
+	m.tags = panels.NewTagsModel(m.width-2, panelH)
+	m.worktree = panels.NewWorktreeModel(m.width-2, panelH)
+	m.rebase = panels.NewRebaseModel(m.width-2, panelH)
+	m.conflict = panels.NewConflictModel(m.width-2, panelH)
+	m.fileHistory = panels.NewCommitModel(m.width-2, panelH)
+	m.remotes = panels.NewRemotesModel(m.width-2, panelH)
+	m.bisect = panels.NewBisectModel(m.width-2, panelH)
 	m.palette = panels.NewPaletteModel(m.width, m.height)
 	m.palette.SetEntries(m.buildPaletteEntries())
 	m.help = widgets.NewHelpOverlay(m.width, m.height)
@@ -1574,8 +2736,11 @@ func (m Model) buildHelpSections() []widgets.HelpSection {
 			km.ToggleDiffStaged,
 		}},
 		{Title: "Remote", Bindings: []key.Binding{km.Push, km.Pull, km.Fetch}},
-		{Title: "Branches", Bindings: []key.Binding{km.Checkout, km.NewBranch, km.Delete}},
-		{Title: "Commits  (g: graph, b: blame, R: reflog)", Bindings: []key.Binding{}},
+		{Title: "Branches", Bindings: []key.Binding{km.Checkout, km.NewBranch, km.RenameBranch, km.Delete, km.Merge, km.Rebase, km.OpenBrowser}},
+		{Title: "Commits  (g: graph, b: blame, y: copy hash)", Bindings: []key.Binding{km.CherryPick, km.Revert, km.Reset, km.InterRebase, km.OpenBrowser}},
+		{Title: "Files", Bindings: []key.Binding{km.FileHistory}},
+		{Title: "Global", Bindings: []key.Binding{km.Worktree}},
+		{Title: "Tags  (t: open  n: new  D: delete  P: push to remote)", Bindings: []key.Binding{km.Tags}},
 		{Title: "Commit form  (tab: fields, ctrl+g: AI, ctrl+s: commit)", Bindings: []key.Binding{km.Escape}},
 		{Title: "App  (ctrl+p: palette, O: settings)", Bindings: []key.Binding{km.Settings, km.Search, km.Refresh, km.Help, km.Quit}},
 	}
@@ -1660,6 +2825,21 @@ func (m Model) executePaletteAction(id string) (tea.Model, tea.Cmd) {
 		m.focused = PanelReflog
 		m.mode = ModeReflog
 		return m, m.loadReflog()
+	case "open_worktrees":
+		m.prevFocused = m.focused
+		m.focused = PanelWorktree
+		m.mode = ModeWorktree
+		return m, m.loadWorktrees()
+	case "open_remotes":
+		m.prevFocused = m.focused
+		m.focused = PanelRemotes
+		m.mode = ModeRemotes
+		return m, m.loadRemotes()
+	case "open_bisect":
+		m.prevFocused = m.focused
+		m.focused = PanelBisect
+		m.mode = ModeBisect
+		return m, m.loadBisectStatus()
 	case "toggle_graph":
 		m.focused = PanelCommits
 		m.commits.ToggleGraph()
@@ -1759,6 +2939,9 @@ func (m Model) buildPaletteEntries() []panels.PaletteEntry {
 		{ID: "open_stash", Label: "Open stash panel", Keys: "z", Category: "Git"},
 		{ID: "open_blame", Label: "Open blame for current file", Keys: "b", Category: "Git"},
 		{ID: "open_reflog", Label: "Open reflog", Keys: "R", Category: "Git"},
+		{ID: "open_worktrees", Label: "Open worktrees panel", Keys: "W", Category: "Git"},
+		{ID: "open_remotes", Label: "Open remotes panel", Keys: "E", Category: "Git"},
+		{ID: "open_bisect", Label: "Open git bisect panel", Keys: "B", Category: "Git"},
 		{ID: "toggle_graph", Label: "Toggle commit graph", Keys: "g", Category: "Commits"},
 		{ID: "toggle_staged", Label: "Toggle staged diff view", Keys: "S", Category: "Diff"},
 		{ID: "ai_commit", Label: "AI: generate commit message", Keys: "ctrl+g", Category: "AI"},

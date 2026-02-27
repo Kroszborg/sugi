@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Config holds all user-configurable settings for sugi.
@@ -59,8 +60,10 @@ func Load() Config {
 	f, err := os.Open(path)
 	if os.IsNotExist(err) {
 		// First run: write a template config so the user can see where to put their key.
-		_ = os.MkdirAll(filepath.Dir(path), 0o755)
-		_ = os.WriteFile(path, []byte(templateConfig), 0o644)
+		// Use restrictive permissions — config contains API keys.
+		if mkErr := os.MkdirAll(filepath.Dir(path), 0o700); mkErr == nil {
+			_ = os.WriteFile(path, []byte(templateConfig), 0o600)
+		}
 		return cfg
 	}
 	if err != nil {
@@ -70,7 +73,10 @@ func Load() Config {
 
 	// Partial decode: only override fields present in the file.
 	// If groq_api_key is still the placeholder, treat it as empty.
-	_ = json.NewDecoder(f).Decode(&cfg)
+	if decErr := json.NewDecoder(f).Decode(&cfg); decErr != nil {
+		// Silently return defaults on JSON parse error — user may have partial config
+		return Default()
+	}
 	if cfg.GroqAPIKey == "YOUR_GROQ_API_KEY_HERE" {
 		cfg.GroqAPIKey = ""
 	}
@@ -78,17 +84,19 @@ func Load() Config {
 }
 
 // Save writes the config to disk, creating the directory if needed.
+// Uses restrictive file permissions (0o600) since config contains API keys.
 func Save(cfg Config) error {
 	path, err := configPath()
 	if err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 
-	f, err := os.Create(path)
+	// O_TRUNC to truncate existing file; 0o600 = owner read/write only
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
@@ -142,59 +150,53 @@ func (c Config) EffectiveGitLabToken() string {
 }
 
 // readGHCLIToken reads the token from the gh CLI config file.
+// Parses hosts.yml line-by-line with proper host boundary detection to avoid
+// matching substrings of other hostnames (e.g. "github" matching "mygithub.com").
 func readGHCLIToken(host string) string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
 
-	// Try ~/.config/gh/hosts.yml
 	hostsPath := filepath.Join(homeDir, ".config", "gh", "hosts.yml")
 	data, err := os.ReadFile(hostsPath)
 	if err != nil {
 		return ""
 	}
 
-	// Minimal YAML parsing - look for "oauth_token:" under the host
-	content := string(data)
-	hostIdx := indexOf(content, host)
-	if hostIdx < 0 {
-		return ""
-	}
-	tokenIdx := indexOf(content[hostIdx:], "oauth_token:")
-	if tokenIdx < 0 {
-		return ""
-	}
-	tokenLine := content[hostIdx+tokenIdx:]
-	// Extract value after "oauth_token: "
-	start := indexOf(tokenLine, "oauth_token:") + len("oauth_token:")
-	if start >= len(tokenLine) {
-		return ""
-	}
-	rest := tokenLine[start:]
-	// Trim whitespace and take until newline
-	i := 0
-	for i < len(rest) && (rest[i] == ' ' || rest[i] == '\t') {
-		i++
-	}
-	rest = rest[i:]
-	end := indexOf(rest, "\n")
-	if end < 0 {
-		end = len(rest)
-	}
-	token := rest[:end]
-	// Strip quotes if present
-	if len(token) >= 2 && token[0] == '"' && token[len(token)-1] == '"' {
-		token = token[1 : len(token)-1]
-	}
-	return token
-}
+	// Line-by-line YAML parsing with strict host boundary detection.
+	// gh CLI hosts.yml format:
+	//   github.com:
+	//       oauth_token: gho_xxx
+	//       git_protocol: https
+	inHost := false
+	for _, line := range strings.Split(string(data), "\n") {
+		// Skip comments and blank lines
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
 
-func indexOf(s, sub string) int {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
+		// Top-level keys have no leading whitespace — host headers like "github.com:"
+		if len(line) > 0 && line[0] != ' ' && line[0] != '\t' {
+			// Exact host match: key must be exactly "host:" with no extra chars
+			key := strings.TrimSuffix(strings.TrimSpace(line), ":")
+			inHost = (key == host)
+			continue
+		}
+
+		// Inside the matched host block
+		if inHost && strings.HasPrefix(trimmed, "oauth_token:") {
+			token := strings.TrimSpace(strings.TrimPrefix(trimmed, "oauth_token:"))
+			// Strip surrounding quotes if present
+			if len(token) >= 2 && token[0] == '"' && token[len(token)-1] == '"' {
+				token = token[1 : len(token)-1]
+			}
+			if token != "" {
+				return token
+			}
 		}
 	}
-	return -1
+	return ""
 }
+

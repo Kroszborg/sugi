@@ -58,6 +58,14 @@ func (m *BranchModel) ShowNewBranchModal() {
 	m.showingModal = true
 }
 
+// ShowRenameBranchModal opens the rename-branch modal pre-filled with currentName.
+func (m *BranchModel) ShowRenameBranchModal(currentName string) {
+	m.newBranchModal = widgets.NewInputModal("Rename Branch", currentName)
+	m.newBranchModal.Input.SetValue(currentName)
+	m.newBranchModal.Show()
+	m.showingModal = true
+}
+
 // HideModal hides any open modal.
 func (m *BranchModel) HideModal() {
 	m.newBranchModal.Hide()
