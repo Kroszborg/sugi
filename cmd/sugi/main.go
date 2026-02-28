@@ -23,10 +23,9 @@ var rootCmd = &cobra.Command{
 
 Panels: Files, Branches, Commits, Diff, PRs, Stash, Blame,
 Worktrees, Remotes, Bisect, Interactive Rebase, Conflict Resolver.`,
-	Args:          cobra.MaximumNArgs(1),
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	RunE:          run,
+	Args:         cobra.MaximumNArgs(1),
+	SilenceUsage: true,
+	RunE:         run,
 }
 
 var versionCmd = &cobra.Command{
@@ -40,7 +39,6 @@ var versionCmd = &cobra.Command{
 func main() {
 	rootCmd.AddCommand(versionCmd)
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }

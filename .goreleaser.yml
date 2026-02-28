@@ -102,7 +102,7 @@ release:
     **Install:**
     ```sh
     # npm
-    npm install -g sugi
+    npm install -g @kroszborg/sugi
 
     # Homebrew
     brew install Kroszborg/tap/sugi

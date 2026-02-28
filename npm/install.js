@@ -77,9 +77,11 @@ function tryGoBuild() {
   const binDest = path.join(BIN_DIR, binName);
 
   console.log('sugi: building from source via `go install`...');
+  // Embed the version string via ldflags so `sugi version` shows the right value
+  const ldflags = `-X main.version=${VERSION}`;
   const result = spawnSync(
     'go',
-    ['install', `github.com/${REPO}/cmd/sugi@v${VERSION}`],
+    ['install', `-ldflags=${ldflags}`, `github.com/${REPO}/cmd/sugi@latest`],
     { stdio: 'inherit', env: process.env }
   );
 
