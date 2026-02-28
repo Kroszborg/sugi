@@ -79,18 +79,18 @@ func (m *SettingsModel) buildStyles(width, height int) {
 		BorderForeground(lipgloss.Color("#89b4fa")).
 		Padding(1, 2).
 		Width(w).Height(h)
-	m.titleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	m.sectionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true)
-	m.labelStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8")).Width(22)
-	m.valueStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4"))
-	m.maskedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7"))
-	m.unsetStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a"))
-	m.cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	m.enabledStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
+	m.titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
+	m.sectionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true)
+	m.labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8")).Width(22)
+	m.valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4"))
+	m.maskedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7"))
+	m.unsetStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a"))
+	m.cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
+	m.enabledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
 	m.disabledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
-	m.hintStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
-	m.editStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Bold(true)
-	m.footerStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
+	m.hintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
+	m.editStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Bold(true)
+	m.footerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
 }
 
 // LoadConfig populates fields from a Config value.
@@ -320,6 +320,7 @@ func (m SettingsModel) View() string {
 		editHint = "enter confirm  esc cancel edit"
 	}
 	sb.WriteString(m.footerStyle.Render("  ↑↓/jk " + editHint + "  ctrl+s save  esc back"))
+	sb.WriteString("\n" + m.footerStyle.Render("  A  Manage accounts →"))
 
 	content := sb.String()
 	// Pre-truncate content to available height (border=2, padding=2 → available = h-4)

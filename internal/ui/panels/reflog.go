@@ -82,3 +82,9 @@ func actionStyle(action string) lipgloss.Style {
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8"))
 	}
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *ReflogModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *ReflogModel) SetListCursor(n int) { m.list.Cursor = n }

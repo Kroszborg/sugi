@@ -21,7 +21,7 @@ type Modal struct {
 	Input   textinput.Model
 	Visible bool
 
-	style     lipgloss.Style
+	style      lipgloss.Style
 	titleStyle lipgloss.Style
 	bodyStyle  lipgloss.Style
 }

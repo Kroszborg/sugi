@@ -36,7 +36,7 @@ type Layout struct {
 	DiffContentHeight  int
 
 	// Responsive mode
-	IsNarrow    bool // < 100 cols: two panels, no diff side-by-side
+	IsNarrow     bool // < 100 cols: two panels, no diff side-by-side
 	IsVeryNarrow bool // < 60 cols: single panel
 }
 
@@ -75,6 +75,12 @@ func ComputeLayout(width, height int) Layout {
 	// Content height inside a bordered panel (2 lines for top+bottom border, 1 for title)
 	l.PanelContentHeight = usable - 3
 	l.DiffContentHeight = usable - 3
+	if l.PanelContentHeight < 4 {
+		l.PanelContentHeight = 4
+	}
+	if l.DiffContentHeight < 4 {
+		l.DiffContentHeight = 4
+	}
 
 	return l
 }

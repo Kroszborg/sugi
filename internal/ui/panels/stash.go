@@ -99,3 +99,9 @@ func (m *StashModel) buildItems() []string {
 	}
 	return items
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *StashModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *StashModel) SetListCursor(n int) { m.list.Cursor = n }

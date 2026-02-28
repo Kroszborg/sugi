@@ -15,16 +15,16 @@ const (
 	ColorText    = lipgloss.Color("#cdd6f4") // primary text
 
 	// Accents
-	ColorBlue    = lipgloss.Color("#89b4fa") // blue
-	ColorSky     = lipgloss.Color("#89dceb") // sky — focus highlight
-	ColorTeal    = lipgloss.Color("#94e2d5") // teal — AI / success
-	ColorGreen   = lipgloss.Color("#a6e3a1") // green — added
-	ColorYellow  = lipgloss.Color("#f9e2af") // yellow — warning
-	ColorPeach   = lipgloss.Color("#fab387") // peach — section headers
-	ColorOrange  = lipgloss.Color("#fe640b") // orange — hashes
-	ColorRed     = lipgloss.Color("#f38ba8") // red — deleted / error
-	ColorPurple  = lipgloss.Color("#cba6f7") // purple — author
-	ColorPink    = lipgloss.Color("#f5c2e7") // pink — renamed
+	ColorBlue   = lipgloss.Color("#89b4fa") // blue
+	ColorSky    = lipgloss.Color("#89dceb") // sky — focus highlight
+	ColorTeal   = lipgloss.Color("#94e2d5") // teal — AI / success
+	ColorGreen  = lipgloss.Color("#a6e3a1") // green — added
+	ColorYellow = lipgloss.Color("#f9e2af") // yellow — warning
+	ColorPeach  = lipgloss.Color("#fab387") // peach — section headers
+	ColorOrange = lipgloss.Color("#fe640b") // orange — hashes
+	ColorRed    = lipgloss.Color("#f38ba8") // red — deleted / error
+	ColorPurple = lipgloss.Color("#cba6f7") // purple — author
+	ColorPink   = lipgloss.Color("#f5c2e7") // pink — renamed
 )
 
 // Theme holds all Lipgloss styles used throughout the TUI.

@@ -6,8 +6,8 @@ import (
 	"github.com/Kroszborg/sugi/internal/git"
 	"github.com/Kroszborg/sugi/internal/ui/widgets"
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/lipgloss"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // RemotesModel displays the list of configured git remotes.
@@ -136,3 +136,9 @@ func renderRemoteItem(r git.RemoteEntry) string {
 
 	return fmt.Sprintf(" ⬡ %s  %s%s", name, urlStr, pushStr)
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *RemotesModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *RemotesModel) SetListCursor(n int) { m.list.Cursor = n }

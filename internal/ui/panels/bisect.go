@@ -73,3 +73,9 @@ func (m *BisectModel) View() string {
 
 	return testing + counts + sep + logTitle + m.list.View()
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *BisectModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *BisectModel) SetListCursor(n int) { m.list.Cursor = n }

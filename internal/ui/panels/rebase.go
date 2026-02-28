@@ -110,3 +110,9 @@ func renderRebaseEntry(e git.RebaseTodoEntry) string {
 
 	return fmt.Sprintf(" %s %s  %s", action, hash, subject)
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *RebaseModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *RebaseModel) SetListCursor(n int) { m.list.Cursor = n }

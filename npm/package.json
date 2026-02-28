@@ -1,6 +1,6 @@
 {
   "name": "@kroszborg/sugi",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Terminal UI git client — PRs, AI commits, interactive rebase, bisect, worktrees",
   "keywords": [
     "git",

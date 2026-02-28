@@ -158,4 +158,3 @@ func (h HelpOverlay) View() string {
 
 	return h.overlayStyle.Render(content + "\n" + footer)
 }
-

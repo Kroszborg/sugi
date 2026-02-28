@@ -10,14 +10,14 @@ import (
 
 // DiffModel displays a unified diff with hunk-level navigation and staging.
 type DiffModel struct {
-	hunks       []git.DiffHunk
-	lines       []string // rendered display lines
-	lineToHunk  []int    // maps display line index -> hunk index (-1 = non-hunk)
-	hunkStarts  []int    // display line where each hunk begins
-	offset      int      // vertical scroll offset
-	hunkCursor  int      // which hunk is selected (for staging)
-	Width       int
-	Height      int
+	hunks      []git.DiffHunk
+	lines      []string // rendered display lines
+	lineToHunk []int    // maps display line index -> hunk index (-1 = non-hunk)
+	hunkStarts []int    // display line where each hunk begins
+	offset     int      // vertical scroll offset
+	hunkCursor int      // which hunk is selected (for staging)
+	Width      int
+	Height     int
 
 	addedStyle   lipgloss.Style
 	removedStyle lipgloss.Style

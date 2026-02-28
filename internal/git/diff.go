@@ -27,22 +27,22 @@ type DiffLine struct {
 
 // DiffHunk is a contiguous block of changes in a diff.
 type DiffHunk struct {
-	Header  string // e.g. "@@ -1,5 +1,7 @@ func foo()"
+	Header   string // e.g. "@@ -1,5 +1,7 @@ func foo()"
 	OldStart int
 	OldCount int
 	NewStart int
 	NewCount int
-	Lines   []DiffLine
+	Lines    []DiffLine
 }
 
 // FileDiff contains all hunks for a single file.
 type FileDiff struct {
-	OldPath string
-	NewPath string
-	Hunks   []DiffHunk
-	IsNew   bool
+	OldPath   string
+	NewPath   string
+	Hunks     []DiffHunk
+	IsNew     bool
 	IsDeleted bool
-	IsBinary bool
+	IsBinary  bool
 }
 
 // Diff returns the diff for a specific file.
@@ -93,7 +93,10 @@ func (c *Client) DiffCommit(hash string) ([]FileDiff, error) {
 
 // parseDiff parses unified diff output into FileDiff structs.
 func parseDiff(raw string) []FileDiff {
-	var files []FileDiff
+	// Pre-allocate: count file headers to avoid repeated grows.
+	fileCount := strings.Count(raw, "\ndiff --git")
+	files := make([]FileDiff, 0, fileCount+1)
+
 	var current *FileDiff
 	var currentHunk *DiffHunk
 	oldLine, newLine := 0, 0
@@ -102,14 +105,14 @@ func parseDiff(raw string) []FileDiff {
 		switch {
 		case strings.HasPrefix(line, "diff --git"):
 			if current != nil {
+				flushHunk(current, currentHunk)
 				files = append(files, *current)
 			}
 			current = &FileDiff{}
 			currentHunk = nil
 
 		case current == nil:
-			// Skip leading content before first diff header
-			continue
+			continue // skip content before first diff header
 
 		case strings.HasPrefix(line, "--- a/"):
 			current.OldPath = strings.TrimPrefix(line, "--- a/")
@@ -123,56 +126,51 @@ func parseDiff(raw string) []FileDiff {
 			current.IsBinary = true
 
 		case strings.HasPrefix(line, "@@ "):
-			if currentHunk != nil {
-				current.Hunks = append(current.Hunks, *currentHunk)
-			}
+			flushHunk(current, currentHunk)
 			hunk := parseHunkHeader(line)
 			currentHunk = &hunk
 			oldLine = hunk.OldStart
 			newLine = hunk.NewStart
-			currentHunk.Lines = append(currentHunk.Lines, DiffLine{
-				Type:    DiffHunkHeader,
-				Content: line,
-			})
+			currentHunk.Lines = append(currentHunk.Lines, DiffLine{Type: DiffHunkHeader, Content: line})
 
 		case currentHunk != nil:
-			switch {
-			case strings.HasPrefix(line, "+"):
-				currentHunk.Lines = append(currentHunk.Lines, DiffLine{
-					Type:    DiffAdded,
-					Content: line[1:],
-					NewLine: newLine,
-				})
-				newLine++
-			case strings.HasPrefix(line, "-"):
-				currentHunk.Lines = append(currentHunk.Lines, DiffLine{
-					Type:    DiffRemoved,
-					Content: line[1:],
-					OldLine: oldLine,
-				})
-				oldLine++
-			case strings.HasPrefix(line, " "):
-				currentHunk.Lines = append(currentHunk.Lines, DiffLine{
-					Type:    DiffContext,
-					Content: line[1:],
-					OldLine: oldLine,
-					NewLine: newLine,
-				})
-				oldLine++
-				newLine++
-			case line == "\\ No newline at end of file":
-				// skip
-			}
+			oldLine, newLine = appendDiffLine(currentHunk, line, oldLine, newLine)
 		}
 	}
 
-	if currentHunk != nil && current != nil {
-		current.Hunks = append(current.Hunks, *currentHunk)
-	}
 	if current != nil {
+		flushHunk(current, currentHunk)
 		files = append(files, *current)
 	}
 	return files
+}
+
+// flushHunk appends currentHunk into f.Hunks if non-nil.
+func flushHunk(f *FileDiff, h *DiffHunk) {
+	if h != nil {
+		f.Hunks = append(f.Hunks, *h)
+	}
+}
+
+// appendDiffLine classifies and appends a single diff body line to the hunk.
+// Returns updated (oldLine, newLine) counters.
+func appendDiffLine(h *DiffHunk, line string, oldLine, newLine int) (int, int) {
+	if len(line) == 0 {
+		return oldLine, newLine
+	}
+	switch line[0] {
+	case '+':
+		h.Lines = append(h.Lines, DiffLine{Type: DiffAdded, Content: line[1:], NewLine: newLine})
+		newLine++
+	case '-':
+		h.Lines = append(h.Lines, DiffLine{Type: DiffRemoved, Content: line[1:], OldLine: oldLine})
+		oldLine++
+	case ' ':
+		h.Lines = append(h.Lines, DiffLine{Type: DiffContext, Content: line[1:], OldLine: oldLine, NewLine: newLine})
+		oldLine++
+		newLine++
+	}
+	return oldLine, newLine
 }
 
 // parseHunkHeader parses "@@ -l,s +l,s @@ optional context" into a DiffHunk.

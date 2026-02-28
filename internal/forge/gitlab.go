@@ -38,20 +38,20 @@ func (c *GitLabClient) projectPath() string {
 // --- GitLab API response types ---
 
 type glMR struct {
-	IID          int    `json:"iid"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	State        string `json:"state"`
-	Draft        bool   `json:"draft"`
-	WebURL       string `json:"web_url"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	MergedAt     *string `json:"merged_at"`
-	Author       struct {
+	IID         int     `json:"iid"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	State       string  `json:"state"`
+	Draft       bool    `json:"draft"`
+	WebURL      string  `json:"web_url"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+	MergedAt    *string `json:"merged_at"`
+	Author      struct {
 		Username string `json:"username"`
 	} `json:"author"`
-	SourceBranch string `json:"source_branch"`
-	TargetBranch string `json:"target_branch"`
+	SourceBranch string   `json:"source_branch"`
+	TargetBranch string   `json:"target_branch"`
 	Labels       []string `json:"labels"`
 }
 
@@ -147,8 +147,8 @@ func (c *GitLabClient) GetCIStatus(commitSHA string) (*CIStatus, error) {
 		c.apiURL, c.projectPath(), commitSHA)
 
 	var statuses []struct {
-		Name   string `json:"name"`
-		Status string `json:"status"`
+		Name      string `json:"name"`
+		Status    string `json:"status"`
 		TargetURL string `json:"target_url"`
 	}
 	if err := c.get(url, &statuses); err != nil {

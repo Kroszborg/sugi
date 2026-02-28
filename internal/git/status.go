@@ -58,8 +58,9 @@ func (c *Client) Status() ([]FileStatus, error) {
 		return nil, nil
 	}
 
-	var files []FileStatus
-	for _, line := range strings.Split(out, "\n") {
+	lines := strings.Split(out, "\n")
+	files := make([]FileStatus, 0, len(lines))
+	for _, line := range lines {
 		if len(line) < 4 {
 			continue
 		}

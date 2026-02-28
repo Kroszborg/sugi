@@ -156,138 +156,16 @@ func (m *CommitMsgModel) View() string {
 		innerW = 20
 	}
 
-	// ── Colors ───────────────────────────────────────────────
-	clrSky     := lipgloss.Color("#89dceb")
-	clrTeal    := lipgloss.Color("#94e2d5")
-	clrSurface := lipgloss.Color("#313244")
-	clrOverlay := lipgloss.Color("#45475a")
-	clrMuted   := lipgloss.Color("#585b70")
-	clrText    := lipgloss.Color("#cdd6f4")
-	clrYellow  := lipgloss.Color("#f9e2af")
-	clrRed     := lipgloss.Color("#f38ba8")
-	clrGreen   := lipgloss.Color("#a6e3a1")
-
-	// ── Subject ──────────────────────────────────────────────
 	charCount := len(m.subject.Value())
+	subjLabelRow, subjBox := m.renderSubjectSection(innerW, charCount)
+	bodyLabelRow, bodyBox := m.renderBodySection(innerW)
+	charBar := m.subjectCharBar(innerW, charCount)
+	typeGuide := m.commitTypeGuide(charCount)
 
-	var counterFg lipgloss.Color
-	var counterText string
-	switch {
-	case charCount > 72:
-		counterFg = clrRed
-		counterText = fmt.Sprintf("%d/72 !", charCount)
-	case charCount > 50:
-		counterFg = clrYellow
-		counterText = fmt.Sprintf("%d/72", charCount)
-	default:
-		counterFg = clrOverlay
-		counterText = fmt.Sprintf("%d/72", charCount)
-	}
-
-	subjectActive := m.active == CommitFieldSubject
-	var subjBorderClr lipgloss.Color
-	var subjLabelClr lipgloss.Color
-	if subjectActive && !m.AIGenerating {
-		subjBorderClr = clrSky
-		subjLabelClr = clrSky
-	} else if m.AIGenerating {
-		subjBorderClr = clrTeal
-		subjLabelClr = clrTeal
-	} else {
-		subjBorderClr = clrSurface
-		subjLabelClr = clrMuted
-	}
-
-	// Label row: icon + SUBJECT + spacer + counter
-	labelLeft := lipgloss.NewStyle().Foreground(subjLabelClr).Bold(subjectActive || m.AIGenerating).
-		Render("◆ SUBJECT")
-	counterRendered := lipgloss.NewStyle().Foreground(counterFg).Bold(charCount > 72).
-		Render(counterText)
-	spacerW := innerW - lipgloss.Width(labelLeft) - lipgloss.Width(counterRendered) - 2
-	if spacerW < 1 {
-		spacerW = 1
-	}
-	spacer := strings.Repeat(" ", spacerW)
-	subjLabelRow := labelLeft + spacer + counterRendered
-
-	subjBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(subjBorderClr).
-		Padding(0, 1).
-		Width(innerW).
-		Render(m.subject.View())
-
-	// ── Body ─────────────────────────────────────────────────
-	bodyActive := m.active == CommitFieldBody
-	var bodyBorderClr lipgloss.Color
-	var bodyLabelClr lipgloss.Color
-	if m.AIGenerating {
-		bodyBorderClr = clrTeal
-		bodyLabelClr = clrTeal
-	} else if bodyActive {
-		bodyBorderClr = clrSky
-		bodyLabelClr = clrSky
-	} else {
-		bodyBorderClr = clrSurface
-		bodyLabelClr = clrMuted
-	}
-
-	bodyLabelMain := lipgloss.NewStyle().Foreground(bodyLabelClr).Bold(bodyActive || m.AIGenerating).
-		Render("◆ DESCRIPTION")
-
-	var bodyLabelSuffix string
-	if m.AIGenerating {
-		bodyLabelSuffix = lipgloss.NewStyle().Foreground(clrTeal).Render("  ✦ writing…")
-	} else {
-		bodyLabelSuffix = lipgloss.NewStyle().Foreground(clrOverlay).Render("  explain why, not what")
-	}
-	bodyLabelRow := bodyLabelMain + bodyLabelSuffix
-
-	bodyBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(bodyBorderClr).
-		Padding(0, 1).
-		Width(innerW).
-		Render(m.body.View())
-
-	// ── Commit type guide ─────────────────────────────────────
-	typeGuide := ""
-	if charCount == 0 && !m.AIGenerating {
-		types := []struct{ t, clr string }{
-			{"feat", "#a6e3a1"}, {"fix", "#f38ba8"}, {"docs", "#89b4fa"},
-			{"refactor", "#cba6f7"}, {"chore", "#585b70"},
-		}
-		var parts []string
-		for _, ty := range types {
-			parts = append(parts, lipgloss.NewStyle().Foreground(lipgloss.Color(ty.clr)).Render(ty.t))
-		}
-		typeGuide = lipgloss.NewStyle().Foreground(clrOverlay).Render("  ") +
-			strings.Join(parts, lipgloss.NewStyle().Foreground(clrOverlay).Render(" · "))
-	}
-
-	// ── Char count status bar ─────────────────────────────────
-	var charBar string
-	if charCount > 0 {
-		filled := charCount * (innerW - 4) / 72
-		if filled > innerW-4 {
-			filled = innerW - 4
-		}
-		empty := innerW - 4 - filled
-		barClr := clrGreen
-		if charCount > 72 {
-			barClr = clrRed
-		} else if charCount > 50 {
-			barClr = clrYellow
-		}
-		charBar = "  " +
-			lipgloss.NewStyle().Foreground(barClr).Render(strings.Repeat("▪", filled)) +
-			lipgloss.NewStyle().Foreground(clrSurface).Render(strings.Repeat("▪", empty))
-	}
-
-	// ── Hints ─────────────────────────────────────────────────
+	clrOverlay := lipgloss.Color("#45475a")
+	clrSurface := lipgloss.Color("#313244")
 	dimStyle := lipgloss.NewStyle().Foreground(clrOverlay)
 	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6c7086")).Bold(true)
-
 	sep := dimStyle.Render("  ·  ")
 	hints := "  " +
 		keyStyle.Render("tab") + dimStyle.Render(" switch") +
@@ -298,30 +176,142 @@ func (m *CommitMsgModel) View() string {
 		sep +
 		keyStyle.Render("esc") + dimStyle.Render(" cancel")
 
-	// ── Divider ───────────────────────────────────────────────
-	divStyle := lipgloss.NewStyle().Foreground(clrSurface)
-	div := divStyle.Render(strings.Repeat("─", innerW+2))
+	div := lipgloss.NewStyle().Foreground(clrSurface).Render(strings.Repeat("─", innerW+2))
 
-	rows := []string{
-		subjLabelRow,
-		subjBox,
-	}
+	rows := []string{subjLabelRow, subjBox}
 	if charBar != "" {
 		rows = append(rows, charBar)
 	}
 	if typeGuide != "" {
 		rows = append(rows, typeGuide)
 	}
-	rows = append(rows,
-		"",
-		bodyLabelRow,
-		bodyBox,
-		"",
-		div,
-		hints,
-	)
-
-	// Filter out leading/trailing empty
-	_ = clrText
+	rows = append(rows, "", bodyLabelRow, bodyBox, "", div, hints)
 	return strings.Join(rows, "\n")
+}
+
+func (m *CommitMsgModel) renderSubjectSection(innerW, charCount int) (labelRow, box string) {
+	clrSky := lipgloss.Color("#89dceb")
+	clrTeal := lipgloss.Color("#94e2d5")
+	clrSurface := lipgloss.Color("#313244")
+	clrMuted := lipgloss.Color("#585b70")
+
+	counterFg, counterText := m.subjectCounterStyle(charCount)
+	subjectActive := m.active == CommitFieldSubject
+
+	var borderClr, labelClr lipgloss.Color
+	if m.AIGenerating {
+		borderClr, labelClr = clrTeal, clrTeal
+	} else if subjectActive {
+		borderClr, labelClr = clrSky, clrSky
+	} else {
+		borderClr, labelClr = clrSurface, clrMuted
+	}
+
+	labelLeft := lipgloss.NewStyle().Foreground(labelClr).Bold(subjectActive || m.AIGenerating).
+		Render("◆ SUBJECT")
+	counterRendered := lipgloss.NewStyle().Foreground(counterFg).Bold(charCount > 72).
+		Render(counterText)
+	spacerW := innerW - lipgloss.Width(labelLeft) - lipgloss.Width(counterRendered) - 2
+	if spacerW < 1 {
+		spacerW = 1
+	}
+	labelRow = labelLeft + strings.Repeat(" ", spacerW) + counterRendered
+
+	box = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderClr).
+		Padding(0, 1).
+		Width(innerW).
+		Render(m.subject.View())
+	return
+}
+
+func (m *CommitMsgModel) subjectCounterStyle(charCount int) (lipgloss.Color, string) {
+	switch {
+	case charCount > 72:
+		return lipgloss.Color("#f38ba8"), fmt.Sprintf("%d/72 !", charCount)
+	case charCount > 50:
+		return lipgloss.Color("#f9e2af"), fmt.Sprintf("%d/72", charCount)
+	default:
+		return lipgloss.Color("#45475a"), fmt.Sprintf("%d/72", charCount)
+	}
+}
+
+func (m *CommitMsgModel) renderBodySection(innerW int) (labelRow, box string) {
+	clrSky := lipgloss.Color("#89dceb")
+	clrTeal := lipgloss.Color("#94e2d5")
+	clrSurface := lipgloss.Color("#313244")
+	clrMuted := lipgloss.Color("#585b70")
+	clrOverlay := lipgloss.Color("#45475a")
+
+	bodyActive := m.active == CommitFieldBody
+	var borderClr, labelClr lipgloss.Color
+	if m.AIGenerating {
+		borderClr, labelClr = clrTeal, clrTeal
+	} else if bodyActive {
+		borderClr, labelClr = clrSky, clrSky
+	} else {
+		borderClr, labelClr = clrSurface, clrMuted
+	}
+
+	labelMain := lipgloss.NewStyle().Foreground(labelClr).Bold(bodyActive || m.AIGenerating).
+		Render("◆ DESCRIPTION")
+	var suffix string
+	if m.AIGenerating {
+		suffix = lipgloss.NewStyle().Foreground(clrTeal).Render("  ✦ writing…")
+	} else {
+		suffix = lipgloss.NewStyle().Foreground(clrOverlay).Render("  explain why, not what")
+	}
+	labelRow = labelMain + suffix
+
+	box = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderClr).
+		Padding(0, 1).
+		Width(innerW).
+		Render(m.body.View())
+	return
+}
+
+func (m *CommitMsgModel) subjectCharBar(innerW, charCount int) string {
+	if charCount == 0 {
+		return ""
+	}
+	clrGreen := lipgloss.Color("#a6e3a1")
+	clrYellow := lipgloss.Color("#f9e2af")
+	clrRed := lipgloss.Color("#f38ba8")
+	clrSurface := lipgloss.Color("#313244")
+
+	filled := charCount * (innerW - 4) / 72
+	if filled > innerW-4 {
+		filled = innerW - 4
+	}
+	empty := innerW - 4 - filled
+
+	barClr := clrGreen
+	if charCount > 72 {
+		barClr = clrRed
+	} else if charCount > 50 {
+		barClr = clrYellow
+	}
+	return "  " +
+		lipgloss.NewStyle().Foreground(barClr).Render(strings.Repeat("▪", filled)) +
+		lipgloss.NewStyle().Foreground(clrSurface).Render(strings.Repeat("▪", empty))
+}
+
+func (m *CommitMsgModel) commitTypeGuide(charCount int) string {
+	if charCount != 0 || m.AIGenerating {
+		return ""
+	}
+	clrOverlay := lipgloss.Color("#45475a")
+	types := []struct{ t, clr string }{
+		{"feat", "#a6e3a1"}, {"fix", "#f38ba8"}, {"docs", "#89b4fa"},
+		{"refactor", "#cba6f7"}, {"chore", "#585b70"},
+	}
+	parts := make([]string, len(types))
+	for i, ty := range types {
+		parts[i] = lipgloss.NewStyle().Foreground(lipgloss.Color(ty.clr)).Render(ty.t)
+	}
+	return lipgloss.NewStyle().Foreground(clrOverlay).Render("  ") +
+		strings.Join(parts, lipgloss.NewStyle().Foreground(clrOverlay).Render(" · "))
 }

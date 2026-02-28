@@ -90,3 +90,9 @@ func truncateLines(lines []string, max int) string {
 	}
 	return strings.Join(lines, " / ")
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *ConflictModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *ConflictModel) SetListCursor(n int) { m.list.Cursor = n }

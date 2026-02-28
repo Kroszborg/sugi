@@ -6,12 +6,12 @@ import (
 
 // Worktree represents a git worktree.
 type Worktree struct {
-	Path      string
-	Branch    string
-	Head      string
-	IsBare    bool
-	IsMain    bool
-	IsLocked  bool
+	Path     string
+	Branch   string
+	Head     string
+	IsBare   bool
+	IsMain   bool
+	IsLocked bool
 }
 
 // Worktrees returns all worktrees for this repository.

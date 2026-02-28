@@ -32,14 +32,14 @@ func (c *GitHubClient) ForgeInfo() ForgeInfo { return c.info }
 // --- GitHub API response types ---
 
 type ghPR struct {
-	Number    int    `json:"number"`
-	Title     string `json:"title"`
-	Body      string `json:"body"`
-	State     string `json:"state"`
-	Draft     bool   `json:"draft"`
-	HTMLURL   string `json:"html_url"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Number    int     `json:"number"`
+	Title     string  `json:"title"`
+	Body      string  `json:"body"`
+	State     string  `json:"state"`
+	Draft     bool    `json:"draft"`
+	HTMLURL   string  `json:"html_url"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 	MergedAt  *string `json:"merged_at"`
 	User      struct {
 		Login string `json:"login"`

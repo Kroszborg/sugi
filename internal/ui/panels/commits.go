@@ -206,3 +206,9 @@ func relativeDate(t time.Time) string {
 		return fmt.Sprintf("%dy", int(d.Hours()/(24*365)))
 	}
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *CommitModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *CommitModel) SetListCursor(n int) { m.list.Cursor = n }

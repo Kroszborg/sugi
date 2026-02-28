@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// AccountEntry holds a named forge account with its token.
+type AccountEntry struct {
+	Name  string `json:"name"`
+	Token string `json:"token"`
+	Host  string `json:"host,omitempty"` // "" means default host (github.com / gitlab.com)
+}
+
 // Config holds all user-configurable settings for sugi.
 // Stored at ~/.config/sugi/config.json
 type Config struct {
@@ -18,6 +25,12 @@ type Config struct {
 	GitHubToken string `json:"github_token"` // overrides GITHUB_TOKEN env
 	GitLabToken string `json:"gitlab_token"` // overrides GITLAB_TOKEN env
 	GitLabHost  string `json:"gitlab_host"`  // for self-hosted GitLab
+
+	// Multi-account
+	GitHubAccounts      []AccountEntry `json:"github_accounts,omitempty"`
+	GitLabAccounts      []AccountEntry `json:"gitlab_accounts,omitempty"`
+	ActiveGitHubAccount string         `json:"active_github_account,omitempty"`
+	ActiveGitLabAccount string         `json:"active_gitlab_account,omitempty"`
 
 	// UI
 	Theme        string `json:"theme"`         // dark (default)
@@ -149,6 +162,28 @@ func (c Config) EffectiveGitLabToken() string {
 	return os.Getenv("GITLAB_TOKEN")
 }
 
+// ActiveGitHubToken returns the token for the active GitHub account,
+// falling back to EffectiveGitHubToken if none is selected.
+func (c *Config) ActiveGitHubToken() string {
+	for _, a := range c.GitHubAccounts {
+		if a.Name == c.ActiveGitHubAccount {
+			return a.Token
+		}
+	}
+	return c.EffectiveGitHubToken()
+}
+
+// ActiveGitLabToken returns the token for the active GitLab account,
+// falling back to EffectiveGitLabToken if none is selected.
+func (c *Config) ActiveGitLabToken() string {
+	for _, a := range c.GitLabAccounts {
+		if a.Name == c.ActiveGitLabAccount {
+			return a.Token
+		}
+	}
+	return c.EffectiveGitLabToken()
+}
+
 // readGHCLIToken reads the token from the gh CLI config file.
 // Parses hosts.yml line-by-line with proper host boundary detection to avoid
 // matching substrings of other hostnames (e.g. "github" matching "mygithub.com").
@@ -199,4 +234,3 @@ func readGHCLIToken(host string) string {
 	}
 	return ""
 }
-

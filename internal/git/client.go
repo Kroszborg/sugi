@@ -2,11 +2,23 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+)
+
+const (
+	// defaultTimeout is applied to all local git commands (status, log, diff, …).
+	// Prevents hangs on corrupt repos or unexpected stdin prompts.
+	defaultTimeout = 30 * time.Second
+
+	// networkTimeout is applied to operations that talk to a remote
+	// (push, pull, fetch).  Network latency can be high on slow connections.
+	networkTimeout = 2 * time.Minute
 )
 
 // Client wraps git command execution for a specific repository.
@@ -43,9 +55,9 @@ func findGitRoot(path string) (string, error) {
 	}
 }
 
-// run executes a git command inside the repo and returns trimmed stdout.
-func (c *Client) run(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+// runCtx executes a git command with the given context and returns trimmed stdout.
+func (c *Client) runCtx(ctx context.Context, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = c.RepoPath
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -54,6 +66,21 @@ func (c *Client) run(args ...string) (string, error) {
 		return "", fmt.Errorf("git %s: %w\n%s", strings.Join(args, " "), err, stderr.String())
 	}
 	return strings.TrimRight(stdout.String(), "\n"), nil
+}
+
+// run executes a git command with the default 30 s timeout.
+func (c *Client) run(args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	return c.runCtx(ctx, args...)
+}
+
+// runSlow executes a git command with a 2-minute network timeout.
+// Use for push, pull, fetch and other operations that contact a remote.
+func (c *Client) runSlow(args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), networkTimeout)
+	defer cancel()
+	return c.runCtx(ctx, args...)
 }
 
 // runLines executes a git command and splits stdout on newlines.
@@ -80,19 +107,19 @@ func (c *Client) CurrentBranch() (string, error) {
 
 // Push pushes the current branch to its upstream remote.
 func (c *Client) Push() error {
-	_, err := c.run("push")
+	_, err := c.runSlow("push")
 	return err
 }
 
 // PushSetUpstream pushes and sets upstream for new branches.
 func (c *Client) PushSetUpstream(remote, branch string) error {
-	_, err := c.run("push", "--set-upstream", remote, branch)
+	_, err := c.runSlow("push", "--set-upstream", remote, branch)
 	return err
 }
 
 // PushForceWithLease pushes with --force-with-lease (safe force push for rebased branches).
 func (c *Client) PushForceWithLease(remote, branch string) error {
-	_, err := c.run("push", "--force-with-lease", remote, branch)
+	_, err := c.runSlow("push", "--force-with-lease", remote, branch)
 	return err
 }
 
@@ -103,18 +130,18 @@ func (c *Client) RunPublic(args ...string) (string, error) {
 
 // Pull fetches and merges the upstream branch.
 func (c *Client) Pull() error {
-	_, err := c.run("pull")
+	_, err := c.runSlow("pull")
 	return err
 }
 
 // Fetch fetches from all remotes.
 func (c *Client) Fetch() error {
-	_, err := c.run("fetch", "--all", "--prune")
+	_, err := c.runSlow("fetch", "--all", "--prune")
 	return err
 }
 
 // buildCmd creates an exec.Command for the repo but does not run it.
-// The caller can configure Stdin/Stdout/Stderr before calling Run().
+// The caller owns the lifetime of the process and must manage cancellation.
 func (c *Client) buildCmd(args ...string) *exec.Cmd {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = c.RepoPath

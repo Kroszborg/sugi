@@ -26,21 +26,21 @@ type PRModel struct {
 	createTarget string
 
 	// Styles
-	numberStyle   lipgloss.Style
-	titleStyle    lipgloss.Style
-	authorStyle   lipgloss.Style
-	dateStyle     lipgloss.Style
-	openStyle     lipgloss.Style
-	draftStyle    lipgloss.Style
-	mergedStyle   lipgloss.Style
-	closedStyle   lipgloss.Style
-	ciOKStyle     lipgloss.Style
-	ciFailStyle   lipgloss.Style
-	ciPendStyle   lipgloss.Style
-	reviewOKStyle lipgloss.Style
+	numberStyle    lipgloss.Style
+	titleStyle     lipgloss.Style
+	authorStyle    lipgloss.Style
+	dateStyle      lipgloss.Style
+	openStyle      lipgloss.Style
+	draftStyle     lipgloss.Style
+	mergedStyle    lipgloss.Style
+	closedStyle    lipgloss.Style
+	ciOKStyle      lipgloss.Style
+	ciFailStyle    lipgloss.Style
+	ciPendStyle    lipgloss.Style
+	reviewOKStyle  lipgloss.Style
 	reviewBadStyle lipgloss.Style
-	emptyStyle    lipgloss.Style
-	detailStyle   lipgloss.Style
+	emptyStyle     lipgloss.Style
+	detailStyle    lipgloss.Style
 }
 
 // NewPRModel creates a PRModel.
@@ -50,21 +50,21 @@ func NewPRModel(width, height int) PRModel {
 		Height: height,
 		list:   widgets.NewScrollList(height-2, width-4),
 
-		numberStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true),
-		titleStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		authorStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")),
-		dateStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		openStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true),
-		draftStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		mergedStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")).Bold(true),
-		closedStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
-		ciOKStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
-		ciFailStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
-		ciPendStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")),
-		reviewOKStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
+		numberStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true),
+		titleStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
+		authorStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")),
+		dateStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
+		openStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true),
+		draftStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
+		mergedStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")).Bold(true),
+		closedStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
+		ciOKStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
+		ciFailStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
+		ciPendStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")),
+		reviewOKStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
 		reviewBadStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")),
-		emptyStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		detailStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
+		emptyStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
+		detailStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
 	}
 }
 
@@ -124,35 +124,33 @@ func (m *PRModel) buildItems() []string {
 	return items
 }
 
-func (m *PRModel) renderPRRow(pr forge.PullRequest, width int) string {
-	// State badge
-	state := ""
+func (m *PRModel) prStateBadge(pr forge.PullRequest) string {
 	switch pr.State {
 	case forge.PROpen:
-		state = m.openStyle.Render("● open  ")
+		return m.openStyle.Render("● open  ")
 	case forge.PRDraft:
-		state = m.draftStyle.Render("◌ draft ")
+		return m.draftStyle.Render("◌ draft ")
 	case forge.PRMerged:
-		state = m.mergedStyle.Render("⬡ merged")
+		return m.mergedStyle.Render("⬡ merged")
 	case forge.PRClosed:
-		state = m.closedStyle.Render("✕ closed")
+		return m.closedStyle.Render("✕ closed")
 	}
+	return ""
+}
 
-	// CI badge
-	ci := ""
+func (m *PRModel) prCIBadge(pr forge.PullRequest) string {
 	switch pr.CI {
 	case forge.CISuccess:
-		ci = m.ciOKStyle.Render("✓")
+		return m.ciOKStyle.Render("✓")
 	case forge.CIFailure, forge.CIError:
-		ci = m.ciFailStyle.Render("✗")
+		return m.ciFailStyle.Render("✗")
 	case forge.CIPending:
-		ci = m.ciPendStyle.Render("⟳")
-	default:
-		ci = " "
+		return m.ciPendStyle.Render("⟳")
 	}
+	return " "
+}
 
-	// Review badge
-	review := ""
+func (m *PRModel) prReviewBadge(pr forge.PullRequest) string {
 	approved, changes := 0, 0
 	for _, r := range pr.Reviews {
 		switch r.State {
@@ -163,10 +161,18 @@ func (m *PRModel) renderPRRow(pr forge.PullRequest, width int) string {
 		}
 	}
 	if approved > 0 && changes == 0 {
-		review = m.reviewOKStyle.Render(fmt.Sprintf("✓%d", approved))
-	} else if changes > 0 {
-		review = m.reviewBadStyle.Render(fmt.Sprintf("!%d", changes))
+		return m.reviewOKStyle.Render(fmt.Sprintf("✓%d", approved))
 	}
+	if changes > 0 {
+		return m.reviewBadStyle.Render(fmt.Sprintf("!%d", changes))
+	}
+	return ""
+}
+
+func (m *PRModel) renderPRRow(pr forge.PullRequest, width int) string {
+	state := m.prStateBadge(pr)
+	ci := m.prCIBadge(pr)
+	review := m.prReviewBadge(pr)
 
 	num := m.numberStyle.Render(fmt.Sprintf("#%-4d", pr.Number))
 	author := m.authorStyle.Render(pr.Author)
@@ -273,3 +279,9 @@ func PRBadge(number int) string {
 		Foreground(lipgloss.Color("#89b4fa")).
 		Render(fmt.Sprintf("PR#%d", number))
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *PRModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *PRModel) SetListCursor(n int) { m.list.Cursor = n }

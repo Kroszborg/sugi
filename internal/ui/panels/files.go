@@ -17,7 +17,7 @@ type FilesModel struct {
 	Width  int
 	Height int
 
-	headerStyle lipgloss.Style
+	headerStyle  lipgloss.Style
 	sectionStyle lipgloss.Style
 }
 
@@ -209,7 +209,7 @@ func renderFileItem(f git.FileStatus, staged bool) string {
 	if dir == "." {
 		dir = ""
 	} else {
-		dir = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(dir+"/")
+		dir = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(dir + "/")
 	}
 	return fmt.Sprintf(" %s %s%s", badge, dir, name)
 }
@@ -217,3 +217,9 @@ func renderFileItem(f git.FileStatus, staged bool) string {
 func isSectionHeader(item string) bool {
 	return strings.HasPrefix(item, "──")
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *FilesModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *FilesModel) SetListCursor(n int) { m.list.Cursor = n }

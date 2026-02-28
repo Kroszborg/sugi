@@ -1,6 +1,7 @@
 package git
 
 import (
+	"strconv"
 	"strings"
 	"time"
 )
@@ -21,7 +22,7 @@ func (c *Client) Reflog(limit int) ([]ReflogEntry, error) {
 	format := strings.Join([]string{"%H", "%h", "%gd", "%gs", "%ci"}, sep)
 	args := []string{"reflog", "--format=" + format}
 	if limit > 0 {
-		args = append(args, "--max-count", itoa(limit))
+		args = append(args, "--max-count", strconv.Itoa(limit))
 	}
 
 	lines, err := c.runLines(args...)

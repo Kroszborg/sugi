@@ -8,8 +8,8 @@ import (
 
 // GraphRenderer colors git log --graph output lines.
 type GraphRenderer struct {
-	colors []lipgloss.Color
-	hashStyle   lipgloss.Style
+	colors       []lipgloss.Color
+	hashStyle    lipgloss.Style
 	subjectStyle lipgloss.Style
 }
 

@@ -1,20 +1,21 @@
 package git
 
 import (
+	"strconv"
 	"strings"
 	"time"
 )
 
 // Commit represents a single git commit.
 type Commit struct {
-	Hash       string
-	ShortHash  string
-	Author     string
+	Hash        string
+	ShortHash   string
+	Author      string
 	AuthorEmail string
-	Date       time.Time
-	Subject    string
-	Body       string
-	Refs       []string // branch names and tags pointing here
+	Date        time.Time
+	Subject     string
+	Body        string
+	Refs        []string // branch names and tags pointing here
 }
 
 // Log returns the commit history for the current branch.
@@ -35,7 +36,7 @@ func (c *Client) Log(limit int) ([]Commit, error) {
 		"--format=" + format,
 	}
 	if limit > 0 {
-		args = append(args, "--max-count", itoa(limit))
+		args = append(args, "--max-count", strconv.Itoa(limit))
 	}
 
 	lines, err := c.runLines(args...)
@@ -43,7 +44,7 @@ func (c *Client) Log(limit int) ([]Commit, error) {
 		return nil, err
 	}
 
-	var commits []Commit
+	commits := make([]Commit, 0, len(lines))
 	for _, line := range lines {
 		if line == "" {
 			continue
@@ -138,7 +139,7 @@ func (c *Client) LogFile(path string, limit int) ([]Commit, error) {
 		path,
 	}
 	if limit > 0 {
-		args = []string{"log", "--format=" + format, "--follow", "--max-count", itoa(limit), "--", path}
+		args = []string{"log", "--format=" + format, "--follow", "--max-count", strconv.Itoa(limit), "--", path}
 	}
 
 	lines, err := c.runLines(args...)
@@ -146,7 +147,7 @@ func (c *Client) LogFile(path string, limit int) ([]Commit, error) {
 		return nil, err
 	}
 
-	var commits []Commit
+	commits := make([]Commit, 0, len(lines))
 	for _, line := range lines {
 		if line == "" {
 			continue
@@ -188,26 +189,7 @@ func (c *Client) LogGraph(limit int) ([]string, error) {
 		"--all",
 	}
 	if limit > 0 {
-		args = append(args, "--max-count", itoa(limit))
+		args = append(args, "--max-count", strconv.Itoa(limit))
 	}
 	return c.runLines(args...)
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	buf := make([]byte, 0, 10)
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	for n > 0 {
-		buf = append([]byte{byte('0' + n%10)}, buf...)
-		n /= 10
-	}
-	if neg {
-		buf = append([]byte{'-'}, buf...)
-	}
-	return string(buf)
 }

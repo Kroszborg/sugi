@@ -6,8 +6,8 @@ import (
 
 	"github.com/Kroszborg/sugi/internal/git"
 	"github.com/Kroszborg/sugi/internal/ui/widgets"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -145,3 +145,9 @@ func renderBranchItem(b git.Branch) string {
 
 	return fmt.Sprintf(" %s %s%s%s", marker, name, tracking, upstream)
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *BranchModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *BranchModel) SetListCursor(n int) { m.list.Cursor = n }

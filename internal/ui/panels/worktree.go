@@ -92,3 +92,9 @@ func renderWorktreeItem(wt git.Worktree) string {
 
 	return fmt.Sprintf(" %s%s%s%s%s", icon, path, branch, head, extra)
 }
+
+// ListCursor returns the current scroll list cursor position.
+func (m *WorktreeModel) ListCursor() int { return m.list.Cursor }
+
+// SetListCursor sets the scroll list cursor position.
+func (m *WorktreeModel) SetListCursor(n int) { m.list.Cursor = n }

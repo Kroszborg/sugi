@@ -7,11 +7,11 @@ import (
 
 // Tag represents a git tag.
 type Tag struct {
-	Name      string
-	Hash      string
-	ShortHash string
-	Date      time.Time
-	Message   string // for annotated tags
+	Name        string
+	Hash        string
+	ShortHash   string
+	Date        time.Time
+	Message     string // for annotated tags
 	IsAnnotated bool
 }
 

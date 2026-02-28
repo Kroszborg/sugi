@@ -27,30 +27,30 @@ const (
 type ReviewState string
 
 const (
-	ReviewPending           ReviewState = "pending"
-	ReviewApproved          ReviewState = "approved"
-	ReviewChangesRequested  ReviewState = "changes_requested"
-	ReviewCommented         ReviewState = "commented"
-	ReviewDismissed         ReviewState = "dismissed"
+	ReviewPending          ReviewState = "pending"
+	ReviewApproved         ReviewState = "approved"
+	ReviewChangesRequested ReviewState = "changes_requested"
+	ReviewCommented        ReviewState = "commented"
+	ReviewDismissed        ReviewState = "dismissed"
 )
 
 // PullRequest is a forge-agnostic PR/MR.
 type PullRequest struct {
-	Number      int
-	Title       string
-	Body        string
-	State       PRState
-	Author      string
-	HeadBranch  string
-	BaseBranch  string
-	URL         string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	MergedAt    *time.Time
-	CI          CIResult
-	Reviews     []Review
-	Labels      []string
-	IsDraft     bool
+	Number     int
+	Title      string
+	Body       string
+	State      PRState
+	Author     string
+	HeadBranch string
+	BaseBranch string
+	URL        string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	MergedAt   *time.Time
+	CI         CIResult
+	Reviews    []Review
+	Labels     []string
+	IsDraft    bool
 }
 
 // Review is a single code review.
@@ -64,8 +64,8 @@ type Review struct {
 // CICheck is a single CI check run.
 type CICheck struct {
 	Name       string
-	Status     string   // "queued", "in_progress", "completed"
-	Conclusion string   // "success", "failure", "cancelled", etc.
+	Status     string // "queued", "in_progress", "completed"
+	Conclusion string // "success", "failure", "cancelled", etc.
 	URL        string
 }
 
