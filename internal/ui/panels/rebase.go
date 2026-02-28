@@ -22,7 +22,7 @@ func NewRebaseModel(width, height int) RebaseModel {
 	return RebaseModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 	}
 }
 

@@ -23,7 +23,7 @@ func NewConflictModel(width, height int) ConflictModel {
 	return ConflictModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 	}
 }
 

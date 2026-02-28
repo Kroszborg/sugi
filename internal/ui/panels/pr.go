@@ -48,7 +48,7 @@ func NewPRModel(width, height int) PRModel {
 	return PRModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 
 		numberStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true),
 		titleStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),

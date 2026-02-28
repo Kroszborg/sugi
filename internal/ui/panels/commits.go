@@ -29,7 +29,7 @@ func NewCommitModel(width, height int) CommitModel {
 	return CommitModel{
 		Width:       width,
 		Height:      height,
-		list:        widgets.NewScrollList(height-2, width-4),
+		list:        widgets.NewScrollList(height-4, width-4),
 		ShowGraph:   false,
 		graphRender: widgets.NewGraphRenderer(),
 	}

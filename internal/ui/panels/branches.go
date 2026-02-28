@@ -27,7 +27,7 @@ func NewBranchModel(width, height int) BranchModel {
 	return BranchModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 	}
 }
 

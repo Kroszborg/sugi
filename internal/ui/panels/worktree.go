@@ -21,7 +21,7 @@ func NewWorktreeModel(width, height int) WorktreeModel {
 	return WorktreeModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 	}
 }
 

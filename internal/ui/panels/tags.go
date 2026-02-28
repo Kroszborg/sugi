@@ -25,7 +25,7 @@ func NewTagsModel(width, height int) TagsModel {
 	return TagsModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 	}
 }
 

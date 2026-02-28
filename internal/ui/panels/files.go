@@ -26,7 +26,7 @@ func NewFilesModel(width, height int) FilesModel {
 	return FilesModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 		headerStyle: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#585b70")).
 			Bold(true),

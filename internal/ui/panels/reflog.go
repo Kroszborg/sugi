@@ -21,7 +21,7 @@ func NewReflogModel(width, height int) ReflogModel {
 	return ReflogModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-2, width-4),
+		list:   widgets.NewScrollList(height-4, width-4),
 	}
 }
 
