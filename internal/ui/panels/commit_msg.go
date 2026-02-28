@@ -162,20 +162,7 @@ func (m *CommitMsgModel) View() string {
 	charBar := m.subjectCharBar(innerW, charCount)
 	typeGuide := m.commitTypeGuide(charCount)
 
-	clrOverlay := lipgloss.Color("#45475a")
 	clrSurface := lipgloss.Color("#313244")
-	dimStyle := lipgloss.NewStyle().Foreground(clrOverlay)
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6c7086")).Bold(true)
-	sep := dimStyle.Render("  ·  ")
-	hints := "  " +
-		keyStyle.Render("tab") + dimStyle.Render(" switch") +
-		sep +
-		keyStyle.Render("ctrl+g") + dimStyle.Render("/") + keyStyle.Render("alt+g") + dimStyle.Render(" AI") +
-		sep +
-		keyStyle.Render("ctrl+s") + dimStyle.Render(" commit") +
-		sep +
-		keyStyle.Render("esc") + dimStyle.Render(" cancel")
-
 	div := lipgloss.NewStyle().Foreground(clrSurface).Render(strings.Repeat("─", innerW+2))
 
 	rows := []string{subjLabelRow, subjBox}
@@ -185,7 +172,7 @@ func (m *CommitMsgModel) View() string {
 	if typeGuide != "" {
 		rows = append(rows, typeGuide)
 	}
-	rows = append(rows, "", bodyLabelRow, bodyBox, "", div, hints)
+	rows = append(rows, "", bodyLabelRow, bodyBox, "", div)
 	return strings.Join(rows, "\n")
 }
 

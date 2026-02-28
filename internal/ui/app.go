@@ -349,6 +349,10 @@ func (m Model) handleDataMsg(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.setStatus("Error: "+msg.Err.Error(), true)
 		} else {
 			m.files.SetFiles(msg.Files)
+			// Auto-load diff for the first selected file on startup/refresh.
+			if m.focused == PanelFiles || m.focused == PanelDiff {
+				return m, m.loadDiffForCursor()
+			}
 		}
 	case GitBranchesMsg:
 		if msg.Err == nil {
@@ -677,8 +681,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.mode = ModeBisect
 			return m, m.loadBisectStatus()
 		}
-	// A opens accounts panel from any panel that doesn't use A for something else.
-	case msg.String() == "A" && m.focused != PanelFiles && m.focused != PanelCommits && m.focused != PanelDiff:
+	// A opens accounts panel from any panel.
+	case msg.String() == "A":
 		if m.focused != PanelAccounts {
 			m.prevFocused = m.focused
 			m.focused = PanelAccounts
@@ -772,7 +776,7 @@ func (m Model) handleFilesKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.mode = ModeCommit
 		m.commitMsg.Focus()
 		return m, nil
-	case msg.String() == "A":
+	case msg.String() == "ctrl+a":
 		// Amend HEAD commit — load its message and open commit form
 		return m, m.loadHeadCommit()
 	case key.Matches(msg, m.keymap.Push):
@@ -985,7 +989,7 @@ func (m Model) handleCommitsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if c != nil {
 			return m, m.copyToClipboard(c.Hash, c.ShortHash)
 		}
-	case msg.String() == "A":
+	case msg.String() == "ctrl+a":
 		// Amend HEAD commit — only makes sense for the top commit
 		return m, m.loadHeadCommit()
 	case key.Matches(msg, m.keymap.CherryPick):
@@ -1099,7 +1103,7 @@ func (m Model) handleDiffKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.stageHunk(false)
 	case key.Matches(msg, m.keymap.Unstage):
 		return m, m.stageHunk(true)
-	case msg.String() == "A":
+	case msg.String() == "ctrl+i":
 		m.mode = ModeAISummary
 		m.aiSummary = "⟳ Generating AI summary…"
 		return m, m.summarizeDiff()
@@ -2557,7 +2561,7 @@ func (m Model) focusedHints() []widgets.KeyHint {
 			{Key: "a", Desc: "stage all"},
 			{Key: "c", Desc: "commit"},
 			{Key: "L", Desc: "file history"},
-			{Key: "A", Desc: "amend"},
+			{Key: "ctrl+a", Desc: "amend"},
 			{Key: "P", Desc: "push"},
 			{Key: "p", Desc: "pull"},
 			{Key: "Z", Desc: "stash"},
@@ -2568,7 +2572,7 @@ func (m Model) focusedHints() []widgets.KeyHint {
 			{Key: "[/]", Desc: "hunk"},
 			{Key: "space", Desc: "stage hunk"},
 			{Key: "u", Desc: "unstage hunk"},
-			{Key: "A", Desc: "AI summary"},
+			{Key: "ctrl+i", Desc: "AI summary"},
 			{Key: "↑↓", Desc: "scroll"},
 		}
 	case PanelCommits:
@@ -2580,7 +2584,7 @@ func (m Model) focusedHints() []widgets.KeyHint {
 			{Key: "X", Desc: "reset"},
 			{Key: "i", Desc: "interactive rebase"},
 			{Key: "o", Desc: "browser"},
-			{Key: "A", Desc: "amend HEAD"},
+			{Key: "ctrl+a", Desc: "amend HEAD"},
 			{Key: "g", Desc: "graph"},
 			{Key: "b", Desc: "blame"},
 		}
@@ -2725,7 +2729,7 @@ func (m Model) renderFooter() string {
 	default:
 		hints = append(m.focusedHints(),
 			widgets.KeyHint{Key: "/", Desc: "search"},
-			widgets.KeyHint{Key: "ctrl+p", Desc: "palette"},
+			widgets.KeyHint{Key: "ctrl+p", Desc: "palette/alt+p"},
 			widgets.KeyHint{Key: "O", Desc: "settings"},
 			widgets.KeyHint{Key: "?", Desc: "help"},
 			widgets.KeyHint{Key: "q", Desc: "quit"},
@@ -2893,7 +2897,7 @@ func (m Model) buildHelpSections() []widgets.HelpSection {
 		{Title: "Files  (P: PRs, z: stash)", Bindings: []key.Binding{
 			km.Stage, km.Unstage, km.StageAll, km.Discard, km.Commit,
 		}},
-		{Title: "Diff  ([/] hunks, A: AI summary)", Bindings: []key.Binding{
+		{Title: "Diff  ([/] hunks, ctrl+i: AI summary)", Bindings: []key.Binding{
 			km.ToggleDiffStaged,
 		}},
 		{Title: "Remote", Bindings: []key.Binding{km.Push, km.Pull, km.Fetch}},
@@ -2903,7 +2907,7 @@ func (m Model) buildHelpSections() []widgets.HelpSection {
 		{Title: "Global", Bindings: []key.Binding{km.Worktree}},
 		{Title: "Tags  (t: open  n: new  D: delete  P: push to remote)", Bindings: []key.Binding{km.Tags}},
 		{Title: "Commit form  (tab: fields, ctrl+g: AI, ctrl+s: commit)", Bindings: []key.Binding{km.Escape}},
-		{Title: "App  (ctrl+p: palette, O: settings)", Bindings: []key.Binding{km.Settings, km.Search, km.Refresh, km.Help, km.Quit}},
+		{Title: "App  (ctrl+p/alt+p: palette, O: settings)", Bindings: []key.Binding{km.Settings, km.Search, km.Refresh, km.Help, km.Quit}},
 	}
 }
 
@@ -3205,7 +3209,7 @@ func (m Model) buildPaletteEntries() []panels.PaletteEntry {
 		{ID: "toggle_graph", Label: "Toggle commit graph", Keys: "g", Category: "Commits"},
 		{ID: "toggle_staged", Label: "Toggle staged diff view", Keys: "S", Category: "Diff"},
 		{ID: "ai_commit", Label: "AI: generate commit message", Keys: "ctrl+g", Category: "AI"},
-		{ID: "ai_diff_summary", Label: "AI: summarise current diff", Keys: "A", Category: "AI"},
+		{ID: "ai_diff_summary", Label: "AI: summarise current diff", Keys: "ctrl+i", Category: "AI"},
 		{ID: "settings", Label: "Open settings (API keys, tokens…)", Keys: "O", Category: "App"},
 		{ID: "refresh", Label: "Refresh all panels", Keys: "r", Category: "App"},
 		{ID: "help", Label: "Show help overlay", Keys: "?", Category: "App"},

@@ -2,7 +2,7 @@
 
 > A terminal UI git client — GitHub/GitLab PRs, AI commit messages, interactive rebase, bisect, worktrees, multi-account management, and more.
 
-![sugi screenshot](https://github.com/Kroszborg/sugi/raw/master/image.png)
+![sugi screenshot](https://github.com/Kroszborg/sugi/raw/master/public/image.png)
 
 ## Install
 
@@ -47,7 +47,7 @@ sugi version      # print version
 | Interactive Rebase | `i` | Reorder/squash/fixup/drop commits |
 | Conflict Resolver | auto | Opens on conflicted files — pick ours/theirs |
 | File History | `L` | Commits touching the selected file |
-| Command Palette | `ctrl+p` | Fuzzy search all actions |
+| Command Palette | `ctrl+p`/`alt+p` | Fuzzy search all actions |
 | Help | `?` | Scrollable keybinding reference |
 | Settings | `O` | Edit config in-app, saved instantly |
 
@@ -71,7 +71,7 @@ sugi version      # print version
 | `a` | stage all |
 | `d` | discard (with confirmation) |
 | `c` | commit form |
-| `A` | amend HEAD |
+| `ctrl+a` | amend HEAD |
 | `P` / `p` | push / pull |
 | `F` | force push with-lease |
 | `Z` | stash all changes |
@@ -102,7 +102,7 @@ sugi version      # print version
 | `g` | toggle graph |
 | `b` | blame at this commit |
 | `R` | reflog |
-| `A` | amend HEAD |
+| `ctrl+a` | amend HEAD |
 
 ### Diff
 | Key | Action |
@@ -111,9 +111,9 @@ sugi version      # print version
 | `space` | stage hunk |
 | `u` | unstage hunk |
 | `s` | toggle staged/unstaged |
-| `A` | AI-summarise diff |
+| `ctrl+i` | AI-summarise diff |
 
-### Accounts (`A`)
+### Accounts (`A` — from any panel)
 | Key | Action |
 |-----|--------|
 | `tab` | GitHub / GitLab tab |
@@ -127,7 +127,7 @@ sugi version      # print version
 |-----|--------|
 | `c` | commit form |
 | `ctrl+g` / `alt+g` | AI-generate commit message |
-| `ctrl+p` | command palette |
+| `ctrl+p` / `alt+p` | command palette |
 | `O` | settings |
 | `?` | help |
 | `q` | quit |

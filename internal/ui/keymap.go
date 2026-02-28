@@ -111,7 +111,7 @@ func DefaultKeyMap() KeyMap {
 		ToggleSideBySide: key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "side-by-side diff")),
 		ToggleDiffStaged: key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "toggle staged diff")),
 
-		Palette:  key.NewBinding(key.WithKeys("ctrl+p"), key.WithHelp("ctrl+p", "command palette")),
+		Palette:  key.NewBinding(key.WithKeys("ctrl+p", "alt+p"), key.WithHelp("ctrl+p/alt+p", "command palette")),
 		Settings: key.NewBinding(key.WithKeys("O"), key.WithHelp("O", "settings")),
 		Help:     key.NewBinding(key.WithKeys("?", "shift+/"), key.WithHelp("?", "help")),
 		Quit:     key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),

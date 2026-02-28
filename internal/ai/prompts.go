@@ -9,25 +9,19 @@ func CommitMsgPrompt(diff string) string {
 		diff = diff[:4000] + "\n... (truncated)"
 	}
 	return `You are an expert developer writing git commit messages following Conventional Commits.
+Analyze the git diff below and write a commit message for EXACTLY what changed in it.
 
-OUTPUT FORMAT (exactly two parts separated by a blank line):
-1. Subject line — max 72 chars: type(scope): present-tense description
-2. Body — 1-3 sentences explaining WHY this change was made (not what the code does)
+OUTPUT FORMAT — two parts separated by one blank line:
+1. Subject: type(scope): short description  (max 72 chars, lowercase after colon, no period)
+2. Body: 1-3 sentences explaining WHY this change was made
 
 Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build
-Rules:
-- Subject must be lowercase after the colon, no trailing period
-- Body is REQUIRED — always write it, even for small changes
-- Body explains motivation, context, or impact — not a repeat of the subject
-- NO markdown, NO code fences, NO "Here is...", NO preamble
-- Output ONLY the two-part commit message, nothing else
 
-Example output:
-feat(auth): add JWT refresh token rotation
-
-Refresh tokens were single-use and expired after 1h, causing frequent
-logouts. Rotation extends sessions automatically while limiting the
-damage window if a token is stolen.
+STRICT RULES:
+- Read the diff carefully — describe ONLY what is in the diff, nothing else
+- Do NOT use any example from these instructions as your answer
+- No markdown, no code fences, no preamble, no "Here is..."
+- Output ONLY the commit message
 
 Git diff:
 ` + diff

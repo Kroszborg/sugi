@@ -12,16 +12,9 @@
 
 ---
 
-## Screenshots
+## Screenshot
 
-```
- ⬡ sugi  ▸ FILES  ⎇ BRANCHES  ● COMMITS  ≋ DIFF  src/main.go  unstaged
-┌──────────────────┬─────────────────┬─────────────────────────────────────┐
-│ ▶ M src/main.go  │ ▶ main          │ ▶ feat: add accounts panel          │
-│ · M go.sum       │ · feature/auth  │ · fix: resize debounce              │
-│ · A docs/new.md  │ · bugfix/typos  │ · chore: update deps                │
-└──────────────────┴─────────────────┴─────────────────────────────────────┘
-```
+![sugi](public/image.png)
 
 ---
 
@@ -112,7 +105,7 @@ sugi version      # print version
 | `pgup` / `pgdn` | page up / down |
 | `/` | search / filter |
 | `esc` | back / cancel |
-| `ctrl+p` | command palette |
+| `ctrl+p` / `alt+p` | command palette |
 | `?` | help overlay |
 | `q` / `ctrl+c` | quit |
 
@@ -124,7 +117,7 @@ sugi version      # print version
 | `a` | stage all files |
 | `d` | discard changes (with confirmation) |
 | `c` | open commit form |
-| `A` | amend HEAD commit |
+| `ctrl+a` | amend HEAD commit |
 | `P` | push |
 | `p` | pull |
 | `f` | fetch |
@@ -161,7 +154,7 @@ sugi version      # print version
 | `g` | toggle ASCII commit graph |
 | `b` | blame current file at this commit |
 | `R` | reflog panel |
-| `A` | amend HEAD commit |
+| `ctrl+a` | amend HEAD commit |
 
 ### Diff panel
 | Key | Action |
@@ -171,7 +164,7 @@ sugi version      # print version
 | `space` | stage hunk |
 | `u` | unstage hunk |
 | `s` / `S` | toggle staged/unstaged diff |
-| `A` | AI-summarise diff |
+| `ctrl+i` | AI-summarise diff |
 
 > **Tip:** The diff panel shows the **selected file's diff** when focused on Files or Diff panels, and the **commit diff** when focused on Commits. Tab to panel `4` to switch back to file diff mode.
 
@@ -191,7 +184,7 @@ sugi version      # print version
 | `c` | commit form |
 | `ctrl+g` / `alt+g` | AI-generate commit message |
 | `P` | open PRs panel (from main panels) |
-| `A` | accounts panel (from non-files/commits/diff panels) |
+| `A` | accounts panel (from any panel) |
 | `W` | worktrees panel |
 | `B` | bisect panel |
 | `E` | remotes panel |

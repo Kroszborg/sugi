@@ -46,6 +46,10 @@ func (m *CommitModel) SetCommits(commits []git.Commit) {
 // SetGraphLines sets raw git log --graph output for graph mode.
 func (m *CommitModel) SetGraphLines(lines []string) {
 	m.graphLines = lines
+	// If graph is already toggled on, render immediately now that data arrived.
+	if m.ShowGraph && len(lines) > 0 {
+		m.list.SetItems(m.graphRender.RenderLines(lines, m.Width-4))
+	}
 }
 
 // ToggleGraph toggles the commit graph view.

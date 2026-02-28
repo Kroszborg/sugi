@@ -76,11 +76,15 @@ func run(cmd *cobra.Command, args []string) error {
 
 	model := ui.New(repo, cfg, forgeClient, aiGen)
 
-	p := tea.NewProgram(
-		model,
+	opts := []tea.ProgramOption{
 		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-	)
+		tea.WithOutput(os.Stderr), // use stderr so stdout stays clean in all terminals
+	}
+	if cfg.MouseEnabled {
+		opts = append(opts, tea.WithMouseCellMotion())
+	}
+
+	p := tea.NewProgram(model, opts...)
 
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("TUI error: %w", err)
