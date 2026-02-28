@@ -8,30 +8,39 @@ sugi uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.3.4] — 2026-02-28
+
 ### Added
+- **Accounts panel** (`A`) — manage multiple GitHub/GitLab tokens with named accounts; switch active account in-app; persisted to config
+- **Multi-account support** — `active_github_account` / `active_gitlab_account` in config; status bar pill shows active account name
+- **Command palette** (`ctrl+p` / `alt+p`) — fuzzy-search all commands; `alt+p` works in VS Code/Cursor terminals
 - **Bisect panel** (`B`) — interactive `git bisect` session with good/bad marking, step counter, log view
 - **Remotes panel** (`E`) — list, add (two-step modal), remove, rename, fetch remotes
 - **Worktrees panel** (`W`) — list, add, remove git worktrees
 - **Interactive rebase** (`i` from commits) — reorder, squash, fixup, drop, reword commits; color-coded actions
 - **Merge conflict resolver** — opens automatically on conflicted files; choose ours/theirs per block
 - **File history** (`L`) — log of commits that touched the currently selected file
-- **Merge branch** (`m` in branches) — merge selected branch into current with abort support
-- **Rebase branch** (`r` in branches) — rebase current branch onto selected; abort/continue aware
-- **Rename branch** (`R` in branches) — in-place modal pre-filled with current name
-- **Revert commit** (`v` in commits) — `git revert --no-edit` with confirmation
-- **Reset HEAD** (`X` in commits) — soft / mixed / hard, prompted inline
-- **Open in browser** (`o`) — opens branch or commit on GitHub / GitLab
-- **Multi-select files** (`ctrl+space`) — bulk stage/unstage/discard
-- **Panel icons** — `▸ FILES`, `⎇ BRANCHES`, `● COMMITS`, `≋ DIFF`
-- **MERGE / REBASE in-progress badges** in header bar
-- **BISECT mode pill** in status bar during active bisect session
-- **Toast notifications** — auto-expiring 3 s success/error toasts
-- **Scrolllist gutter cursor** — `▶` indicator replaces fragile background highlight
 
 ### Changed
-- Status bar shows `·` separators and context-aware mode pill
-- Help overlay is scrollable (`j`/`k`)
-- `r` key scoped per panel (refresh globally, rebase in branches panel)
+- **Deep Noir color palette** — Linear/Vercel-inspired dark theme; electric violet `#7c6dfa` as single primary accent (replaces catppuccin sky)
+- **Diff panel**: full-width background tinting on added (green) / removed (red) lines; GitHub-style
+- **Diff scrollbar**: minimal `▌` thumb indicator, invisible track — content stays within panel bounds (no window expansion)
+- **ScrollList scrollbar**: same thumb-only indicator on all panels
+- **Focused panel titles**: underline + accent color when active; clearer focus state
+- **Cursor row**: violet-tinted background, more readable in all panels
+- **Confirm modals**: `[y] confirm  [esc] cancel` — one-click cancel, no redundant `[n] No`
+- Amend shortcut changed: `ctrl+a` (was `A` — conflict with accounts panel)
+- AI diff summary shortcut changed: `ctrl+i` (was `A` in diff panel)
+
+### Fixed
+- Diff panel no longer expands terminal window when diff is longer than panel height
+- ScrollList height calculation: `height-3` (was `height-4`, causing 1 wasted row per panel)
+- Input modals (add account, add remote, new tag) no longer hijack global keys while typing
+- `sugi version` now works; unknown subcommands show proper error (removed `SilenceErrors`)
+- npm install: redirect handling fixed, `go install` fallback uses `@latest` with version ldflags
+- npm package name corrected to `@kroszborg/sugi` throughout docs and goreleaser config
 
 ---
 
