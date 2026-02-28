@@ -51,7 +51,7 @@ func NewInputModal(title, placeholder string) Modal {
 	ti.Placeholder = placeholder
 	ti.Focus()
 	ti.CharLimit = 200
-	ti.Width = 46
+	ti.Width = 56
 
 	return Modal{
 		Kind:  ModalInput,
@@ -61,7 +61,7 @@ func NewInputModal(title, placeholder string) Modal {
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#89b4fa")).
 			Padding(1, 2).
-			Width(50),
+			Width(60),
 		titleStyle: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#89b4fa")).
 			Bold(true),
@@ -84,8 +84,11 @@ func (m Modal) View() string {
 		body = m.bodyStyle.Render(m.Body) + "\n\n" +
 			m.bodyStyle.Render("[y] Yes   [n] No   [esc] Cancel")
 	case ModalInput:
-		body = m.Input.View() + "\n\n" +
-			m.bodyStyle.Render("[enter] Confirm   [esc] Cancel")
+		body = m.Input.View()
+		if m.Body != "" {
+			body += "\n\n" + m.bodyStyle.Render(m.Body)
+		}
+		body += "\n\n" + m.bodyStyle.Render("[enter] Confirm   [esc] Cancel")
 	}
 
 	return m.style.Render(title + "\n\n" + body)

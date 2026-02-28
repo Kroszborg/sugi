@@ -73,7 +73,7 @@ Stage, unstage, discard, commit (with amend), push (with force-with-lease), pull
 
 ```sh
 # npm (macOS, Linux, Windows)
-npm install -g sugi
+npm install -g @kroszborg/sugi
 
 # Homebrew (macOS / Linux)
 brew install Kroszborg/tap/sugi

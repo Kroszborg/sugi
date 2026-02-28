@@ -7,7 +7,7 @@
 ## Install
 
 ```sh
-npm install -g sugi
+npm install -g @kroszborg/sugi
 ```
 
 Or via Homebrew:

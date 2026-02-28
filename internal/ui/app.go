@@ -592,6 +592,15 @@ func (m Model) handleModeOverlay(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 	case ModeReset:
 		out, cmd := m.handleResetKey(msg)
 		return out, cmd, true
+	case ModeNewTag:
+		out, cmd := m.handleTagsKey(msg)
+		return out, cmd, true
+	case ModeAddRemote:
+		out, cmd := m.handleRemotesKey(msg)
+		return out, cmd, true
+	case ModeAddAccount:
+		out, cmd := m.handleAccountsKey(msg)
+		return out, cmd, true
 	}
 	return m, nil, false
 }
@@ -2958,7 +2967,7 @@ func (m Model) handleAccountsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k", "up":
 		m.accounts.MoveUp()
 	case "n":
-		m.accounts.ShowAddModal()
+		m.accounts.ShowAddModal(m.accounts.CurrentForgeType())
 		m.mode = ModeAddAccount
 	case "D":
 		if a := m.accounts.CurrentAccount(); a != nil {

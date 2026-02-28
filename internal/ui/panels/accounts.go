@@ -20,11 +20,12 @@ type AccountsModel struct {
 	Height int
 
 	// Add-account modal state
-	addModal  widgets.Modal
-	showModal bool
-	addStep   int    // 0 = name, 1 = token, 2 = host
-	addName   string // name buffer across steps
-	addToken  string // token buffer across steps
+	addModal     widgets.Modal
+	showModal    bool
+	addStep      int    // 0 = name, 1 = token, 2 = host
+	addName      string // name buffer across steps
+	addToken     string // token buffer across steps
+	addForgeType string // "github" or "gitlab" — set when modal opens
 
 	// Active account names (mirrors cfg fields for display)
 	ActiveGitHub string
@@ -132,12 +133,15 @@ func (m *AccountsModel) CurrentForgeType() string {
 }
 
 // ShowAddModal opens the 3-step add-account modal at step 0 (name entry).
-func (m *AccountsModel) ShowAddModal() {
+func (m *AccountsModel) ShowAddModal(forgeType string) {
 	m.addStep = 0
 	m.addName = ""
 	m.addToken = ""
-	m.addModal = widgets.NewInputModal("Add Account — Name (step 1/3)", "my-work-account")
-	m.addModal.Show()
+	m.addForgeType = forgeType
+	mod := widgets.NewInputModal("Add Account — Step 1 of 3: Name", "e.g. personal, work")
+	mod.Body = "A short nickname to identify this account.\nExamples: personal  work  client"
+	mod.Show()
+	m.addModal = mod
 	m.showModal = true
 }
 
@@ -149,21 +153,39 @@ func (m *AccountsModel) AdvanceAddModal() (done bool, name, token, host string) 
 	case 0:
 		m.addName = val
 		m.addStep = 1
-		m.addModal = widgets.NewInputModal("Add Account — Token (step 2/3)", "ghp_...")
-		m.addModal.Show()
+		mod := widgets.NewInputModal("Add Account — Step 2 of 3: Token", tokenPlaceholder(m.addForgeType))
+		mod.Body = tokenHint(m.addForgeType)
+		mod.Show()
+		m.addModal = mod
 		return false, "", "", ""
 	case 1:
 		m.addToken = val
 		m.addStep = 2
-		m.addModal = widgets.NewInputModal("Add Account — Host (step 3/3, enter to skip)", "github.company.com")
-		m.addModal.Show()
+		mod := widgets.NewInputModal("Add Account — Step 3 of 3: Host (optional)", "e.g. github.mycompany.com")
+		mod.Body = "Leave blank for github.com / gitlab.com\nOnly needed for GitHub Enterprise or self-hosted GitLab\nExample: github.mycompany.com"
+		mod.Show()
+		m.addModal = mod
 		return false, "", "", ""
 	case 2:
-		h := val // may be empty (skip = default host)
+		h := val
 		m.HideModal()
 		return true, m.addName, m.addToken, h
 	}
 	return false, "", "", ""
+}
+
+func tokenPlaceholder(forgeType string) string {
+	if forgeType == "gitlab" {
+		return "glpat-..."
+	}
+	return "ghp_... or github_pat_..."
+}
+
+func tokenHint(forgeType string) string {
+	if forgeType == "gitlab" {
+		return "Create at: gitlab.com/-/profile/personal_access_tokens\nRequired scope: api\nToken starts with: glpat-"
+	}
+	return "Create at: github.com/settings/tokens\nRequired scopes: repo + read:user\nToken starts with: ghp_  or  github_pat_"
 }
 
 // IsModalVisible reports whether the add-account modal is open.

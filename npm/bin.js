@@ -10,7 +10,7 @@ const binPath = path.join(__dirname, 'bin', binName);
 
 if (!fs.existsSync(binPath)) {
   console.error('sugi: binary not found at ' + binPath);
-  console.error('Try reinstalling: npm install -g sugi');
+  console.error('Try reinstalling: npm install -g @kroszborg/sugi');
   process.exit(1);
 }
 
