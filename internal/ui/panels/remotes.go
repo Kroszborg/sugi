@@ -142,3 +142,6 @@ func (m *RemotesModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *RemotesModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetRemotes returns the raw remotes slice (for rebuildPanels preservation).
+func (m *RemotesModel) GetRemotes() []git.RemoteEntry { return m.remotes }

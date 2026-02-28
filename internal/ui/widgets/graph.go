@@ -40,6 +40,42 @@ func (g GraphRenderer) RenderLines(lines []string, width int) []string {
 	return rendered
 }
 
+// ExtractHashes returns the short commit hash for each graph line, or "" for
+// graph-only lines (connectors, blanks). Index aligns 1:1 with the lines slice.
+func (g GraphRenderer) ExtractHashes(lines []string) []string {
+	hashes := make([]string, len(lines))
+	for i, line := range lines {
+		hashes[i] = extractHashFromGraphLine(line)
+	}
+	return hashes
+}
+
+// extractHashFromGraphLine pulls the first 7-char hex token after graph chars.
+func extractHashFromGraphLine(line string) string {
+	// Skip graph prefix (*, |, /, \, _, space)
+	j := 0
+	for j < len(line) && isGraphChar(line[j]) {
+		j++
+	}
+	rest := strings.TrimSpace(line[j:])
+	if rest == "" {
+		return ""
+	}
+	// First token is the short hash
+	parts := strings.SplitN(rest, " ", 2)
+	h := parts[0]
+	// Validate: must be hex chars, 6-40 chars
+	if len(h) < 6 || len(h) > 40 {
+		return ""
+	}
+	for _, c := range h {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return ""
+		}
+	}
+	return h
+}
+
 // renderLine colorizes a single graph line.
 func (g GraphRenderer) renderLine(line string, width int) string {
 	if line == "" {

@@ -98,3 +98,6 @@ func (m *WorktreeModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *WorktreeModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetWorktrees returns the raw worktree slice (for rebuildPanels preservation).
+func (m *WorktreeModel) GetWorktrees() []git.Worktree { return m.worktrees }

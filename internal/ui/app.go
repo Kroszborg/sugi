@@ -2825,7 +2825,7 @@ func (m *Model) setStatus(msg string, isErr bool) {
 }
 
 func (m *Model) rebuildPanels() {
-	// Save cursor positions before recreating panel structs.
+	// ── Save cursor positions ────────────────────────────────────────────────
 	filesCur := m.files.ListCursor()
 	branchCur := m.branches.ListCursor()
 	commitsCur := m.commits.ListCursor()
@@ -2842,6 +2842,19 @@ func (m *Model) rebuildPanels() {
 	accountsCur := m.accounts.ListCursor()
 	accountsTab := m.accounts.Tab()
 
+	// ── Save loaded data so we don't lose it on resize ───────────────────────
+	oldFiles := m.files.GetFiles()
+	oldBranches := m.branches.GetBranches()
+	oldCommits := m.commits.GetCommits()
+	oldGraphLines := m.commits.GetGraphLines()
+	showGraph := m.commits.ShowGraph
+	oldStashes := m.stash.GetStashes()
+	oldTags := m.tags.GetTags()
+	oldWorktrees := m.worktree.GetWorktrees()
+	oldRemotes := m.remotes.GetRemotes()
+	oldReflog := m.reflog.GetEntries()
+
+	// ── Rebuild panel structs (resets to correct dimensions) ─────────────────
 	layout := ComputeLayout(m.width, m.height)
 	panelH, leftW, rightW := layout.LeftHeight, layout.LeftWidth, layout.RightWidth
 	tabH, commitH := splitPanelHeight(panelH)
@@ -2875,7 +2888,41 @@ func (m *Model) rebuildPanels() {
 	}
 	m.searchInput.Width = m.width / 3
 
-	// Restore cursor positions.
+	// ── Restore loaded data into resized panels ───────────────────────────────
+	if len(oldFiles) > 0 {
+		m.files.SetFiles(oldFiles)
+	}
+	if len(oldBranches) > 0 {
+		m.branches.SetBranches(oldBranches)
+	}
+	if len(oldCommits) > 0 {
+		m.commits.SetCommits(oldCommits)
+		if len(oldGraphLines) > 0 {
+			m.commits.SetGraphLines(oldGraphLines)
+		}
+		if showGraph {
+			// Re-render graph at new width: ShowGraph is currently false after
+			// SetCommits reset, so one ToggleGraph call turns it on correctly.
+			m.commits.ToggleGraph()
+		}
+	}
+	if len(oldStashes) > 0 {
+		m.stash.SetStashes(oldStashes)
+	}
+	if len(oldTags) > 0 {
+		m.tags.SetTags(oldTags)
+	}
+	if len(oldWorktrees) > 0 {
+		m.worktree.SetWorktrees(oldWorktrees)
+	}
+	if len(oldRemotes) > 0 {
+		m.remotes.SetRemotes(oldRemotes)
+	}
+	if len(oldReflog) > 0 {
+		m.reflog.SetEntries(oldReflog)
+	}
+
+	// ── Restore cursor positions ──────────────────────────────────────────────
 	m.files.SetListCursor(filesCur)
 	m.branches.SetListCursor(branchCur)
 	m.commits.SetListCursor(commitsCur)

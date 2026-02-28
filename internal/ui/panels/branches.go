@@ -151,3 +151,6 @@ func (m *BranchModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *BranchModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetBranches returns the raw branch slice (for rebuildPanels preservation).
+func (m *BranchModel) GetBranches() []git.Branch { return m.branches }

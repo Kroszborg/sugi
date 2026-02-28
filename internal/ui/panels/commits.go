@@ -14,6 +14,7 @@ import (
 type CommitModel struct {
 	commits     []git.Commit
 	graphLines  []string // raw git log --graph lines
+	graphHashes []string // short hash per graph line ("" for connector lines)
 	list        widgets.ScrollList
 	Width       int
 	Height      int
@@ -46,6 +47,7 @@ func (m *CommitModel) SetCommits(commits []git.Commit) {
 // SetGraphLines sets raw git log --graph output for graph mode.
 func (m *CommitModel) SetGraphLines(lines []string) {
 	m.graphLines = lines
+	m.graphHashes = m.graphRender.ExtractHashes(lines)
 	// If graph is already toggled on, render immediately now that data arrived.
 	if m.ShowGraph && len(lines) > 0 {
 		m.list.SetItems(m.graphRender.RenderLines(lines, m.Width-4))
@@ -84,13 +86,27 @@ func (m *CommitModel) SetFilter(q string) {
 	m.list.SetItems(items)
 }
 
-// CurrentCommit returns the commit at the cursor, respecting filters.
+// CurrentCommit returns the commit at the cursor, respecting filters and graph mode.
 func (m *CommitModel) CurrentCommit() *git.Commit {
 	if len(m.commits) == 0 {
 		return nil
 	}
 	if m.ShowGraph {
-		// In graph mode, cursor maps to graph lines, not 1:1 with commits
+		// In graph mode, map cursor → short hash → commit entry.
+		cursor := m.list.Cursor
+		if cursor >= len(m.graphHashes) {
+			return nil
+		}
+		hash := m.graphHashes[cursor]
+		if hash == "" {
+			return nil // connector / blank line
+		}
+		for i := range m.commits {
+			if strings.HasPrefix(m.commits[i].ShortHash, hash) ||
+				strings.HasPrefix(hash, m.commits[i].ShortHash) {
+				return &m.commits[i]
+			}
+		}
 		return nil
 	}
 	idx := m.list.Cursor
@@ -216,3 +232,9 @@ func (m *CommitModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *CommitModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetCommits returns the raw commit slice (for rebuildPanels preservation).
+func (m *CommitModel) GetCommits() []git.Commit { return m.commits }
+
+// GetGraphLines returns the raw graph lines (for rebuildPanels preservation).
+func (m *CommitModel) GetGraphLines() []string { return m.graphLines }

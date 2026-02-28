@@ -223,3 +223,6 @@ func (m *FilesModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *FilesModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetFiles returns the raw file slice (for rebuildPanels preservation).
+func (m *FilesModel) GetFiles() []git.FileStatus { return m.files }

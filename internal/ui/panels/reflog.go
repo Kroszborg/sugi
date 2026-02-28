@@ -88,3 +88,6 @@ func (m *ReflogModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *ReflogModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetEntries returns the raw reflog entries (for rebuildPanels preservation).
+func (m *ReflogModel) GetEntries() []git.ReflogEntry { return m.entries }

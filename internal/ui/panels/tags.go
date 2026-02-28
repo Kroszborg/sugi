@@ -126,3 +126,6 @@ func (m *TagsModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *TagsModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetTags returns the raw tag slice (for rebuildPanels preservation).
+func (m *TagsModel) GetTags() []git.Tag { return m.tags }

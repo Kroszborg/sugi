@@ -105,3 +105,6 @@ func (m *StashModel) ListCursor() int { return m.list.Cursor }
 
 // SetListCursor sets the scroll list cursor position.
 func (m *StashModel) SetListCursor(n int) { m.list.Cursor = n }
+
+// GetStashes returns the raw stash slice (for rebuildPanels preservation).
+func (m *StashModel) GetStashes() []git.StashEntry { return m.stashes }
