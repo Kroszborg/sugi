@@ -45,12 +45,12 @@ func (q *ToastQueue) View(width int) string {
 	if t == nil {
 		return ""
 	}
-	color := "#a6e3a1"
+	color := "#3ecf8e"
 	if t.IsErr {
-		color = "#f38ba8"
+		color = "#e05454"
 	}
 	return lipgloss.NewStyle().
-		Background(lipgloss.Color("#313244")).
+		Background(lipgloss.Color("#1a1a2a")).
 		Foreground(lipgloss.Color(color)).
 		Padding(0, 2).
 		Width(width).

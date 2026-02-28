@@ -2273,25 +2273,25 @@ func (m Model) renderAISummary() string {
 	}
 	if len(wrapped) > maxLines {
 		wrapped = wrapped[:maxLines]
-		wrapped = append(wrapped, lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("… (truncated)"))
+		wrapped = append(wrapped, lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("… (truncated)"))
 	}
 
 	content := strings.Join(wrapped, "\n")
-	hint := lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("\n[esc] close")
+	hint := lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("\n[esc] close")
 
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#94e2d5")).
+		BorderForeground(lipgloss.Color("#2ec4b6")).
 		Width(w).Height(h).
 		Padding(0, 1).
 		Render(title + "\n\n" + content + hint)
 }
 
 func (m Model) renderHeader() string {
-	bg := lipgloss.Color("#181825")
-	repoStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	branchStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#a6e3a1"))
-	mutedStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#45475a"))
+	bg := lipgloss.Color("#0e0e1a")
+	repoStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#4d9de0")).Bold(true)
+	branchStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#3ecf8e"))
+	mutedStyle := lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#252538"))
 
 	repoName := repoStyle.Render(" ⬡ " + m.repo.RepoName())
 	branch, _ := m.repo.CurrentBranch()
@@ -2301,28 +2301,28 @@ func (m Model) renderHeader() string {
 	extra := ""
 	if m.loading {
 		extra += lipgloss.NewStyle().Background(bg).
-			Foreground(lipgloss.Color("#f9e2af")).Render("   ⟳ " + m.loadingMsg)
+			Foreground(lipgloss.Color("#d4a017")).Render("   ⟳ " + m.loadingMsg)
 	}
 	if m.mode == ModeSearch {
 		extra += lipgloss.NewStyle().Background(bg).
-			Foreground(lipgloss.Color("#cba6f7")).Render("   / " + m.searchInput.Value())
+			Foreground(lipgloss.Color("#a87efb")).Render("   / " + m.searchInput.Value())
 	}
 	if m.aiGenerating {
 		extra += lipgloss.NewStyle().Background(bg).
-			Foreground(lipgloss.Color("#94e2d5")).Render("   ✦ AI…")
+			Foreground(lipgloss.Color("#2ec4b6")).Render("   ✦ AI…")
 	}
 	// In-progress git operation badges
 	if m.repo.MergeInProgress() {
 		extra += "  " + lipgloss.NewStyle().
-			Background(lipgloss.Color("#f9e2af")).Foreground(lipgloss.Color("#1e1e2e")).
+			Background(lipgloss.Color("#d4a017")).Foreground(lipgloss.Color("#13131e")).
 			Bold(true).Padding(0, 1).Render("MERGE") +
-			lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#585b70")).Render(" m:abort")
+			lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#3d3d5c")).Render(" m:abort")
 	}
 	if m.repo.RebaseInProgress() {
 		extra += "  " + lipgloss.NewStyle().
-			Background(lipgloss.Color("#cba6f7")).Foreground(lipgloss.Color("#1e1e2e")).
+			Background(lipgloss.Color("#a87efb")).Foreground(lipgloss.Color("#13131e")).
 			Bold(true).Padding(0, 1).Render("REBASE") +
-			lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#585b70")).Render(" esc:abort")
+			lipgloss.NewStyle().Background(bg).Foreground(lipgloss.Color("#3d3d5c")).Render(" esc:abort")
 	}
 
 	forgeStr := ""
@@ -2332,8 +2332,8 @@ func (m Model) renderHeader() string {
 	}
 
 	right := lipgloss.NewStyle().
-		Background(lipgloss.Color("#181825")).
-		Foreground(lipgloss.Color("#45475a")).
+		Background(lipgloss.Color("#0e0e1a")).
+		Foreground(lipgloss.Color("#252538")).
 		Render("sugi  ")
 
 	left := repoName + sep + branchStr + forgeStr + extra
@@ -2427,19 +2427,19 @@ func (m Model) renderCommitMode(layout Layout) string {
 
 	// Border and title color
 	isGenerating := m.mode == ModeAIGenerating
-	borderClr := lipgloss.Color("#89dceb") // sky
+	borderClr := lipgloss.Color("#7c6dfa") // sky
 	if isGenerating {
-		borderClr = lipgloss.Color("#94e2d5") // teal while generating
+		borderClr = lipgloss.Color("#2ec4b6") // teal while generating
 	}
 
 	// Title row
 	titleText := lipgloss.NewStyle().Foreground(borderClr).Bold(true).Render(" COMMIT")
 	var titleSuffix string
 	if isGenerating {
-		titleSuffix = lipgloss.NewStyle().Foreground(lipgloss.Color("#94e2d5")).
+		titleSuffix = lipgloss.NewStyle().Foreground(lipgloss.Color("#2ec4b6")).
 			Render("   ✦ AI generating…")
 	} else {
-		titleSuffix = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).
+		titleSuffix = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).
 			Render("   conventional commits")
 	}
 	title := titleText + titleSuffix
@@ -2477,7 +2477,7 @@ func (m Model) renderFilesPanel(width, height int) string {
 		selStr = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorGreen)).Bold(true).
 			Render(fmt.Sprintf("  ◆ %d selected", n))
 	}
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ▸ FILES") + statsStr + selStr +
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Underline(focused).Render(" ▸ FILES") + statsStr + selStr +
 		lipgloss.NewStyle().Foreground(lipgloss.Color(ColorOverlay)).Render("  [1]")
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).BorderForeground(bc).
@@ -2496,7 +2496,7 @@ func (m Model) renderBranchesPanel(width, height int) string {
 		mergeHint = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorPurple)).Render("  ⚡ rebase")
 	}
 
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ⎇ BRANCHES") + mergeHint +
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Underline(focused).Render(" ⎇ BRANCHES") + mergeHint +
 		lipgloss.NewStyle().Foreground(lipgloss.Color(ColorOverlay)).Render("  [2]")
 	inner := m.branches.View()
 	if m.mode == ModeNewBranch || m.mode == ModeRenameBranch {
@@ -2516,7 +2516,7 @@ func (m Model) renderCommitsPanel(width, height int) string {
 		extra = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTeal)).Render("  graph") +
 			lipgloss.NewStyle().Foreground(lipgloss.Color(ColorOverlay)).Render("  [3]")
 	}
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ● COMMITS") + extra
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Underline(focused).Render(" ● COMMITS") + extra
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).BorderForeground(bc).
 		Width(width - 2).Height(height - 2).
@@ -2555,7 +2555,7 @@ func (m Model) renderDiffPanel(width, height int) string {
 		extra += lipgloss.NewStyle().Foreground(lipgloss.Color(ColorMuted)).
 			Render("  " + m.diff.ScrollInfo())
 	}
-	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Render(" ≋ DIFF") + extra
+	title := lipgloss.NewStyle().Foreground(tc).Bold(focused).Underline(focused).Render(" ≋ DIFF") + extra
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).BorderForeground(bc).
 		Width(width - 2).Height(height - 2).
@@ -2751,18 +2751,18 @@ func (m Model) renderFooter() string {
 	// Compose mode pills
 	var pill string
 	if m.repo.BisectInProgress() {
-		pill = widgets.ModePillStyle("BISECT", "#1e1e2e", "#94e2d5")
+		pill = widgets.ModePillStyle("BISECT", "#13131e", "#2ec4b6")
 	}
 	if m.cfg.ActiveGitHubAccount != "" {
 		if pill != "" {
 			pill += "  "
 		}
-		pill += widgets.ModePillStyle("⬡ "+m.cfg.ActiveGitHubAccount, "#1e1e2e", "#89b4fa")
+		pill += widgets.ModePillStyle("⬡ "+m.cfg.ActiveGitHubAccount, "#13131e", "#4d9de0")
 	} else if m.cfg.ActiveGitLabAccount != "" {
 		if pill != "" {
 			pill += "  "
 		}
-		pill += widgets.ModePillStyle("⬡ "+m.cfg.ActiveGitLabAccount, "#1e1e2e", "#e78284")
+		pill += widgets.ModePillStyle("⬡ "+m.cfg.ActiveGitLabAccount, "#13131e", "#e78284")
 	}
 	sb.ModePill = pill
 	return sb.View()
@@ -2782,9 +2782,9 @@ func (m Model) statusLine() string {
 
 func panelColors(focused bool) (border, title lipgloss.Color) {
 	if focused {
-		return lipgloss.Color("#89dceb"), lipgloss.Color("#89dceb") // sky blue — brighter when active
+		return lipgloss.Color("#7c6dfa"), lipgloss.Color("#7c6dfa") // electric violet — focused
 	}
-	return lipgloss.Color("#313244"), lipgloss.Color("#6c7086") // subtle when inactive
+	return lipgloss.Color("#252538"), lipgloss.Color("#4a4a6a") // noir subtle — unfocused
 }
 
 // splitPanelHeight divides panelH into (tabH for files/branches, commitH for commits).
@@ -2849,7 +2849,7 @@ func (m *Model) rebuildPanels() {
 	m.files = panels.NewFilesModel(leftW, tabH)
 	m.branches = panels.NewBranchModel(leftW, tabH)
 	m.commits = panels.NewCommitModel(leftW, commitH)
-	m.diff = panels.NewDiffModel(rightW, panelH)
+	m.diff = panels.NewDiffModel(rightW, panelH-3)
 	m.commitMsg = panels.NewCommitMsgModel(leftW, panelH)
 	m.stash = panels.NewStashModel(m.width-2, panelH)
 	m.blame = panels.NewBlameModel(m.width-2, panelH)

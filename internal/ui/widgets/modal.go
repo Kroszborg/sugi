@@ -34,14 +34,14 @@ func NewConfirmModal(title, body string) Modal {
 		Body:  body,
 		style: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa")).
+			BorderForeground(lipgloss.Color("#4d9de0")).
 			Padding(1, 2).
 			Width(50),
 		titleStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#89b4fa")).
+			Foreground(lipgloss.Color("#4d9de0")).
 			Bold(true),
 		bodyStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#cdd6f4")),
+			Foreground(lipgloss.Color("#d8d8ee")),
 	}
 }
 
@@ -59,14 +59,14 @@ func NewInputModal(title, placeholder string) Modal {
 		Input: ti,
 		style: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa")).
+			BorderForeground(lipgloss.Color("#4d9de0")).
 			Padding(1, 2).
 			Width(60),
 		titleStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#89b4fa")).
+			Foreground(lipgloss.Color("#4d9de0")).
 			Bold(true),
 		bodyStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#cdd6f4")),
+			Foreground(lipgloss.Color("#d8d8ee")),
 	}
 }
 
@@ -81,14 +81,21 @@ func (m Modal) View() string {
 	var body string
 	switch m.Kind {
 	case ModalConfirm:
-		body = m.bodyStyle.Render(m.Body) + "\n\n" +
-			m.bodyStyle.Render("[y] Yes   [n] No   [esc] Cancel")
+		confirmHint := lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true).Render("[y]") +
+			m.bodyStyle.Render(" confirm") +
+			"   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("[esc] cancel")
+		body = m.bodyStyle.Render(m.Body) + "\n\n" + confirmHint
 	case ModalInput:
 		body = m.Input.View()
 		if m.Body != "" {
 			body += "\n\n" + m.bodyStyle.Render(m.Body)
 		}
-		body += "\n\n" + m.bodyStyle.Render("[enter] Confirm   [esc] Cancel")
+		inputHint := lipgloss.NewStyle().Foreground(lipgloss.Color("#7c6dfa")).Bold(true).Render("[enter]") +
+			m.bodyStyle.Render(" confirm") +
+			"   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("[esc] cancel")
+		body += "\n\n" + inputHint
 	}
 
 	return m.style.Render(title + "\n\n" + body)

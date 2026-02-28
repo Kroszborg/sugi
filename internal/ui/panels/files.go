@@ -26,12 +26,12 @@ func NewFilesModel(width, height int) FilesModel {
 	return FilesModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 		headerStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#585b70")).
+			Foreground(lipgloss.Color("#3d3d5c")).
 			Bold(true),
 		sectionStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#585b70")),
+			Foreground(lipgloss.Color("#3d3d5c")),
 	}
 }
 
@@ -121,7 +121,7 @@ func (m *FilesModel) ClearSelection() { m.list.ClearSelected() }
 func (m *FilesModel) View() string {
 	if len(m.files) == 0 {
 		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#585b70")).
+			Foreground(lipgloss.Color("#3d3d5c")).
 			Render("  No changes")
 	}
 	return m.list.View()
@@ -209,7 +209,7 @@ func renderFileItem(f git.FileStatus, staged bool) string {
 	if dir == "." {
 		dir = ""
 	} else {
-		dir = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(dir + "/")
+		dir = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(dir + "/")
 	}
 	return fmt.Sprintf(" %s %s%s", badge, dir, name)
 }

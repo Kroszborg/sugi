@@ -17,16 +17,16 @@ type GraphRenderer struct {
 func NewGraphRenderer() GraphRenderer {
 	return GraphRenderer{
 		colors: []lipgloss.Color{
-			lipgloss.Color("#89b4fa"), // blue
-			lipgloss.Color("#a6e3a1"), // green
-			lipgloss.Color("#cba6f7"), // purple
-			lipgloss.Color("#f9e2af"), // yellow
-			lipgloss.Color("#fab387"), // orange
-			lipgloss.Color("#94e2d5"), // teal
-			lipgloss.Color("#89dceb"), // sky
+			lipgloss.Color("#4d9de0"), // blue
+			lipgloss.Color("#3ecf8e"), // green
+			lipgloss.Color("#a87efb"), // purple
+			lipgloss.Color("#d4a017"), // yellow
+			lipgloss.Color("#e8835c"), // orange
+			lipgloss.Color("#2ec4b6"), // teal
+			lipgloss.Color("#7c6dfa"), // sky
 		},
-		hashStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true),
-		subjectStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
+		hashStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Bold(true),
+		subjectStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
 	}
 }
 

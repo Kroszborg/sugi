@@ -41,15 +41,15 @@ func (m *BisectModel) MoveDown() { m.list.MoveDown() }
 // View renders the bisect panel.
 func (m *BisectModel) View() string {
 	if !m.Status.InProgress {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).
 			Render("  No bisect session in progress.\n\n  Press [s] to start, then [b]ad and [g]ood to narrow down.")
 	}
 
 	// Status header
-	hashStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true)
-	goodStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
-	badStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Bold(true)
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
+	hashStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Bold(true)
+	goodStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true)
+	badStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c"))
 
 	testing := ""
 	if m.Status.CurrentHash != "" {
@@ -66,7 +66,7 @@ func (m *BisectModel) View() string {
 		labelStyle.Render("commits marked"),
 	)
 
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a"))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#252538"))
 	sep := sepStyle.Render(strings.Repeat("─", m.Width-6)) + "\n"
 
 	logTitle := labelStyle.Render("  Bisect log:\n")

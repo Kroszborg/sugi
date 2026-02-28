@@ -21,7 +21,7 @@ func NewWorktreeModel(width, height int) WorktreeModel {
 	return WorktreeModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -48,7 +48,7 @@ func (m *WorktreeModel) MoveDown() { m.list.MoveDown() }
 // View renders the worktrees panel.
 func (m *WorktreeModel) View() string {
 	if len(m.worktrees) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No worktrees")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No worktrees")
 	}
 	return m.list.View()
 }
@@ -64,16 +64,16 @@ func (m *WorktreeModel) buildItems() []string {
 func renderWorktreeItem(wt git.Worktree) string {
 	icon := "  "
 	if wt.IsMain {
-		icon = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Render("● ")
+		icon = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Render("● ")
 	} else if wt.IsLocked {
-		icon = lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Render("🔒 ")
+		icon = lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Render("🔒 ")
 	}
 
-	path := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(wt.Path)
+	path := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(wt.Path)
 
 	branch := ""
 	if wt.Branch != "" {
-		branch = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Render(fmt.Sprintf(" [%s]", wt.Branch))
+		branch = lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Render(fmt.Sprintf(" [%s]", wt.Branch))
 	}
 
 	head := ""
@@ -82,12 +82,12 @@ func renderWorktreeItem(wt git.Worktree) string {
 		if len(short) > 7 {
 			short = short[:7]
 		}
-		head = lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Render(" " + short)
+		head = lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Render(" " + short)
 	}
 
 	extra := ""
 	if wt.IsBare {
-		extra = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(" (bare)")
+		extra = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(" (bare)")
 	}
 
 	return fmt.Sprintf(" %s%s%s%s%s", icon, path, branch, head, extra)

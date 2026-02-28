@@ -33,13 +33,13 @@ func NewDiffModel(width, height int) DiffModel {
 	return DiffModel{
 		Width:        width,
 		Height:       height,
-		addedStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
-		removedStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
-		contextStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		hunkStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#94e2d5")),
-		hunkFocused:  lipgloss.NewStyle().Foreground(lipgloss.Color("#94e2d5")).Background(lipgloss.Color("#1e3a4a")).Bold(true),
-		headerStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true),
-		emptyStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
+		addedStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Background(lipgloss.Color("#0e2018")),
+		removedStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Background(lipgloss.Color("#200e0e")),
+		contextStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
+		hunkStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#2ec4b6")),
+		hunkFocused:  lipgloss.NewStyle().Foreground(lipgloss.Color("#2ec4b6")).Background(lipgloss.Color("#1e3a4a")).Bold(true),
+		headerStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true),
+		emptyStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
 	}
 }
 
@@ -190,18 +190,64 @@ func (m *DiffModel) BuildHunkPatch(filePath string, hunkIdx int, reverse bool) s
 	return sb.String()
 }
 
-// View renders the diff panel content.
+// View renders the diff panel content with a scrollbar when content overflows.
 func (m *DiffModel) View() string {
 	if len(m.lines) == 0 {
 		return m.emptyStyle.Render("  Select a file to view diff")
 	}
 
-	end := m.offset + m.Height
+	viewH := m.Height
+	if viewH <= 0 {
+		viewH = 1
+	}
+
+	end := m.offset + viewH
 	if end > len(m.lines) {
 		end = len(m.lines)
 	}
+	visible := m.lines[m.offset:end]
 
-	return strings.Join(m.lines[m.offset:end], "\n")
+	if len(m.lines) <= viewH {
+		return strings.Join(visible, "\n")
+	}
+
+	// Render with scrollbar column on the right.
+	scrollBar := renderDiffScrollbar(viewH, len(m.lines), m.offset)
+	var sb strings.Builder
+	for i, line := range visible {
+		sb.WriteString(line)
+		if i < len(scrollBar) {
+			sb.WriteString(" ")
+			sb.WriteString(scrollBar[i])
+		}
+		if i < len(visible)-1 {
+			sb.WriteRune('\n')
+		}
+	}
+	return sb.String()
+}
+
+func renderDiffScrollbar(height, total, offset int) []string {
+	bars := make([]string, height)
+	thumbSize := height * height / total
+	if thumbSize < 1 {
+		thumbSize = 1
+	}
+	maxOff := total - height
+	thumbPos := 0
+	if maxOff > 0 {
+		thumbPos = offset * (height - thumbSize) / maxOff
+	}
+	trackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#1a1a2a"))
+	thumbStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#252538"))
+	for i := range bars {
+		if i >= thumbPos && i < thumbPos+thumbSize {
+			bars[i] = thumbStyle.Render("▌")
+		} else {
+			bars[i] = trackStyle.Render(" ")
+		}
+	}
+	return bars
 }
 
 // ScrollInfo returns "hunk X/Y" or "line X/Y" for the status bar.
@@ -241,9 +287,9 @@ func (m *DiffModel) renderLine(dl git.DiffLine, width int, focused bool) string 
 
 	switch dl.Type {
 	case git.DiffAdded:
-		return m.addedStyle.Render("+" + content)
+		return m.addedStyle.Width(width).Render("+" + content)
 	case git.DiffRemoved:
-		return m.removedStyle.Render("-" + content)
+		return m.removedStyle.Width(width).Render("-" + content)
 	case git.DiffHunkHeader:
 		if focused {
 			return m.hunkFocused.Width(width).Render("▶ " + content)

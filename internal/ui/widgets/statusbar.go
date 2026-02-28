@@ -29,28 +29,28 @@ type StatusBar struct {
 
 // NewStatusBar creates a StatusBar for the given terminal width.
 func NewStatusBar(width int) StatusBar {
-	bg := lipgloss.Color("#181825")
+	bg := lipgloss.Color("#0e0e1a")
 	return StatusBar{
 		Width: width,
 		keyStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#89dceb")).
+			Foreground(lipgloss.Color("#7c6dfa")).
 			Bold(true),
 		descStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#6c7086")),
+			Foreground(lipgloss.Color("#4a4a6a")),
 		sepStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#313244")),
+			Foreground(lipgloss.Color("#1a1a2a")),
 		dotStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#45475a")),
+			Foreground(lipgloss.Color("#252538")),
 		barStyle: lipgloss.NewStyle().
 			Background(bg).
 			Width(width),
 		extraStyle: lipgloss.NewStyle().
 			Background(bg).
-			Foreground(lipgloss.Color("#6c7086")),
+			Foreground(lipgloss.Color("#4a4a6a")),
 	}
 }
 

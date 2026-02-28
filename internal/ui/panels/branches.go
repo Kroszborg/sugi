@@ -27,7 +27,7 @@ func NewBranchModel(width, height int) BranchModel {
 	return BranchModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -97,7 +97,7 @@ func (m *BranchModel) SetModalInputModel(ti textinput.Model) {
 // View renders the branches panel content.
 func (m *BranchModel) View() string {
 	if len(m.branches) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No branches")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No branches")
 	}
 	return m.list.View()
 }
@@ -119,9 +119,9 @@ func renderBranchItem(b git.Branch) string {
 	marker := widgets.BranchBadge(b.IsCurrent)
 	name := b.Name
 	if b.IsCurrent {
-		name = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true).Render(name)
+		name = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true).Render(name)
 	} else {
-		name = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(name)
+		name = lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(name)
 	}
 
 	tracking := ""
@@ -130,7 +130,7 @@ func renderBranchItem(b git.Branch) string {
 		if ab != "" {
 			tracking = " " + ab
 		} else {
-			tracking = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(" ✓")
+			tracking = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(" ✓")
 		}
 	}
 
@@ -140,7 +140,7 @@ func renderBranchItem(b git.Branch) string {
 		if idx := strings.Index(short, "/"); idx >= 0 {
 			short = short[idx+1:]
 		}
-		upstream = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(fmt.Sprintf(" [%s]", short))
+		upstream = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(fmt.Sprintf(" [%s]", short))
 	}
 
 	return fmt.Sprintf(" %s %s%s%s", marker, name, tracking, upstream)

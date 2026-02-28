@@ -22,7 +22,7 @@ func NewRebaseModel(width, height int) RebaseModel {
 	return RebaseModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -74,7 +74,7 @@ func (m *RebaseModel) MoveDown() { m.list.MoveDown() }
 // View renders the rebase todo panel.
 func (m *RebaseModel) View() string {
 	if len(m.Entries) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No rebase entries")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No rebase entries")
 	}
 	return m.list.View()
 }
@@ -91,22 +91,22 @@ func renderRebaseEntry(e git.RebaseTodoEntry) string {
 	var actionStyle lipgloss.Style
 	switch e.Action {
 	case git.RebasePick:
-		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
+		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true)
 	case git.RebaseReword:
-		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Bold(true)
+		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Bold(true)
 	case git.RebaseSquash:
-		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")).Bold(true)
+		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb")).Bold(true)
 	case git.RebaseFixup:
-		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
+		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true)
 	case git.RebaseDrop:
-		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Bold(true)
+		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Bold(true)
 	default:
-		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
+		actionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c"))
 	}
 
 	action := actionStyle.Render(fmt.Sprintf("%-6s", string(e.Action)))
-	hash := lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Render(e.Hash)
-	subject := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(e.Subject)
+	hash := lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Render(e.Hash)
+	subject := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(e.Subject)
 
 	return fmt.Sprintf(" %s %s  %s", action, hash, subject)
 }

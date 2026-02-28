@@ -41,9 +41,9 @@ func NewCommitMsgModel(width, height int) CommitMsgModel {
 	subj.CharLimit = 72
 	subj.Width = innerW - 2
 
-	subj.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89dceb"))
-	subj.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4"))
-	subj.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a"))
+	subj.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7c6dfa"))
+	subj.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee"))
+	subj.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#252538"))
 
 	bodyH := height - 14
 	if bodyH < 3 {
@@ -56,8 +56,8 @@ func NewCommitMsgModel(width, height int) CommitMsgModel {
 	body.SetHeight(bodyH)
 	body.CharLimit = 5000
 	body.ShowLineNumbers = false
-	body.FocusedStyle.Base = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4"))
-	body.BlurredStyle.Base = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8"))
+	body.FocusedStyle.Base = lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee"))
+	body.BlurredStyle.Base = lipgloss.NewStyle().Foreground(lipgloss.Color("#7878a0"))
 
 	return CommitMsgModel{
 		Width:   width,
@@ -162,7 +162,7 @@ func (m *CommitMsgModel) View() string {
 	charBar := m.subjectCharBar(innerW, charCount)
 	typeGuide := m.commitTypeGuide(charCount)
 
-	clrSurface := lipgloss.Color("#313244")
+	clrSurface := lipgloss.Color("#1a1a2a")
 	div := lipgloss.NewStyle().Foreground(clrSurface).Render(strings.Repeat("─", innerW+2))
 
 	rows := []string{subjLabelRow, subjBox}
@@ -177,10 +177,10 @@ func (m *CommitMsgModel) View() string {
 }
 
 func (m *CommitMsgModel) renderSubjectSection(innerW, charCount int) (labelRow, box string) {
-	clrSky := lipgloss.Color("#89dceb")
-	clrTeal := lipgloss.Color("#94e2d5")
-	clrSurface := lipgloss.Color("#313244")
-	clrMuted := lipgloss.Color("#585b70")
+	clrSky := lipgloss.Color("#7c6dfa")
+	clrTeal := lipgloss.Color("#2ec4b6")
+	clrSurface := lipgloss.Color("#1a1a2a")
+	clrMuted := lipgloss.Color("#3d3d5c")
 
 	counterFg, counterText := m.subjectCounterStyle(charCount)
 	subjectActive := m.active == CommitFieldSubject
@@ -216,20 +216,20 @@ func (m *CommitMsgModel) renderSubjectSection(innerW, charCount int) (labelRow, 
 func (m *CommitMsgModel) subjectCounterStyle(charCount int) (lipgloss.Color, string) {
 	switch {
 	case charCount > 72:
-		return lipgloss.Color("#f38ba8"), fmt.Sprintf("%d/72 !", charCount)
+		return lipgloss.Color("#e05454"), fmt.Sprintf("%d/72 !", charCount)
 	case charCount > 50:
-		return lipgloss.Color("#f9e2af"), fmt.Sprintf("%d/72", charCount)
+		return lipgloss.Color("#d4a017"), fmt.Sprintf("%d/72", charCount)
 	default:
-		return lipgloss.Color("#45475a"), fmt.Sprintf("%d/72", charCount)
+		return lipgloss.Color("#252538"), fmt.Sprintf("%d/72", charCount)
 	}
 }
 
 func (m *CommitMsgModel) renderBodySection(innerW int) (labelRow, box string) {
-	clrSky := lipgloss.Color("#89dceb")
-	clrTeal := lipgloss.Color("#94e2d5")
-	clrSurface := lipgloss.Color("#313244")
-	clrMuted := lipgloss.Color("#585b70")
-	clrOverlay := lipgloss.Color("#45475a")
+	clrSky := lipgloss.Color("#7c6dfa")
+	clrTeal := lipgloss.Color("#2ec4b6")
+	clrSurface := lipgloss.Color("#1a1a2a")
+	clrMuted := lipgloss.Color("#3d3d5c")
+	clrOverlay := lipgloss.Color("#252538")
 
 	bodyActive := m.active == CommitFieldBody
 	var borderClr, labelClr lipgloss.Color
@@ -264,10 +264,10 @@ func (m *CommitMsgModel) subjectCharBar(innerW, charCount int) string {
 	if charCount == 0 {
 		return ""
 	}
-	clrGreen := lipgloss.Color("#a6e3a1")
-	clrYellow := lipgloss.Color("#f9e2af")
-	clrRed := lipgloss.Color("#f38ba8")
-	clrSurface := lipgloss.Color("#313244")
+	clrGreen := lipgloss.Color("#3ecf8e")
+	clrYellow := lipgloss.Color("#d4a017")
+	clrRed := lipgloss.Color("#e05454")
+	clrSurface := lipgloss.Color("#1a1a2a")
 
 	filled := charCount * (innerW - 4) / 72
 	if filled > innerW-4 {
@@ -290,10 +290,10 @@ func (m *CommitMsgModel) commitTypeGuide(charCount int) string {
 	if charCount != 0 || m.AIGenerating {
 		return ""
 	}
-	clrOverlay := lipgloss.Color("#45475a")
+	clrOverlay := lipgloss.Color("#252538")
 	types := []struct{ t, clr string }{
-		{"feat", "#a6e3a1"}, {"fix", "#f38ba8"}, {"docs", "#89b4fa"},
-		{"refactor", "#cba6f7"}, {"chore", "#585b70"},
+		{"feat", "#3ecf8e"}, {"fix", "#e05454"}, {"docs", "#4d9de0"},
+		{"refactor", "#a87efb"}, {"chore", "#3d3d5c"},
 	}
 	parts := make([]string, len(types))
 	for i, ty := range types {

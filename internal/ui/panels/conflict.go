@@ -23,7 +23,7 @@ func NewConflictModel(width, height int) ConflictModel {
 	return ConflictModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -51,7 +51,7 @@ func (m *ConflictModel) MoveDown() { m.list.MoveDown() }
 // View renders the conflict panel.
 func (m *ConflictModel) View() string {
 	if len(m.Blocks) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Render("  No conflicts — file is clean")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Render("  No conflicts — file is clean")
 	}
 	return m.list.View()
 }
@@ -66,19 +66,19 @@ func (m *ConflictModel) buildItems() []string {
 
 func renderConflictBlock(idx int, b git.ConflictBlock) string {
 	header := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#f9e2af")).Bold(true).
+		Foreground(lipgloss.Color("#d4a017")).Bold(true).
 		Render(fmt.Sprintf("  Conflict #%d  (line %d)", idx+1, b.Start+1))
 
-	oursLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Render("  ours:   ")
-	theirsLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Render("  theirs: ")
+	oursLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Render("  ours:   ")
+	theirsLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Render("  theirs: ")
 
 	oursPreview := truncateLines(b.OursLines, 2)
 	theirsPreview := truncateLines(b.TheirsLines, 2)
 
 	return header + "\n" + oursLabel +
-		lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(oursPreview) +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(oursPreview) +
 		"\n" + theirsLabel +
-		lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(theirsPreview)
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(theirsPreview)
 }
 
 func truncateLines(lines []string, max int) string {

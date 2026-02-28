@@ -50,15 +50,15 @@ func NewPaletteModel(width, height int) PaletteModel {
 		Height: height,
 		input:  ti,
 
-		titleStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true),
-		selectedStyle: lipgloss.NewStyle().Background(lipgloss.Color("#313244")).Foreground(lipgloss.Color("#cdd6f4")),
-		normalStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		keysStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
-		catStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		dimStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a")),
+		titleStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true),
+		selectedStyle: lipgloss.NewStyle().Background(lipgloss.Color("#1a1a2a")).Foreground(lipgloss.Color("#d8d8ee")),
+		normalStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
+		keysStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")),
+		catStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
+		dimStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#252538")),
 		boxStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa")).
+			BorderForeground(lipgloss.Color("#4d9de0")).
 			Padding(0, 1),
 	}
 }

@@ -50,17 +50,17 @@ func NewAccountsModel(width, height int) AccountsModel {
 		Height: height,
 		list:   widgets.NewScrollList(height-6, width-4),
 	}
-	m.titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	m.tabStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#6c7086"))
-	m.activeTab = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true).Underline(true)
-	m.hintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
-	m.activeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
-	m.nameStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Bold(true)
-	m.tokenStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7"))
-	m.hostStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#6c7086"))
+	m.titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true)
+	m.tabStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4a4a6a"))
+	m.activeTab = lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true).Underline(true)
+	m.hintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c"))
+	m.activeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true)
+	m.nameStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Bold(true)
+	m.tokenStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb"))
+	m.hostStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4a4a6a"))
 	m.pillStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("#a6e3a1")).
-		Foreground(lipgloss.Color("#1e1e2e")).
+		Background(lipgloss.Color("#3ecf8e")).
+		Foreground(lipgloss.Color("#13131e")).
 		Bold(true).
 		Padding(0, 1)
 	return m

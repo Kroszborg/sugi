@@ -28,10 +28,11 @@ func NewScrollList(height, width int) ScrollList {
 		Width:    width,
 		Selected: make(map[int]bool),
 		CursorStyle: lipgloss.NewStyle().
-			Background(lipgloss.Color("#313244")).
-			Foreground(lipgloss.Color("#cdd6f4")),
-		NormalStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		SelectedStyle: lipgloss.NewStyle().Background(lipgloss.Color("#2a2a3e")).Foreground(lipgloss.Color("#cdd6f4")),
+			Background(lipgloss.Color("#1e1a3a")).
+			Foreground(lipgloss.Color("#a99ffc")).
+			Bold(true),
+		NormalStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
+		SelectedStyle: lipgloss.NewStyle().Background(lipgloss.Color("#1a1a2a")).Foreground(lipgloss.Color("#d8d8ee")),
 	}
 }
 
@@ -130,9 +131,15 @@ func (sl *ScrollList) CurrentItem() string {
 
 // cursor glyph styles — rendered once and reused
 var (
-	cursorGlyph  = lipgloss.NewStyle().Foreground(lipgloss.Color("#89dceb")).Bold(true).Render("▶")
-	normalGlyph  = lipgloss.NewStyle().Foreground(lipgloss.Color("#313244")).Render("·")
-	selectedMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true).Render("◆")
+	cursorGlyph  = lipgloss.NewStyle().Foreground(lipgloss.Color("#7c6dfa")).Bold(true).Render("▶")
+	normalGlyph  = lipgloss.NewStyle().Foreground(lipgloss.Color("#252538")).Render("│")
+	selectedMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true).Render("◆")
+)
+
+// scrollBar styles — track is invisible (space), thumb is a subtle mark
+var (
+	scrollTrackStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#1a1a2a"))
+	scrollThumbStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#252538"))
 )
 
 // View renders the list into a string of at most Height lines.
@@ -141,25 +148,31 @@ func (sl *ScrollList) View() string {
 		return sl.NormalStyle.Render("  (empty)")
 	}
 
-	var sb strings.Builder
+	needScrollbar := len(sl.Items) > sl.Height
 	end := min(sl.offset+sl.Height, len(sl.Items))
 
+	// Pre-compute scrollbar chars when content overflows.
+	var scrollBars []string
+	if needScrollbar {
+		scrollBars = buildScrollbar(sl.Height, len(sl.Items), sl.offset)
+	}
+
+	visW := sl.Width - 3 // 3 chars for gutter (glyph + space)
+	if needScrollbar {
+		visW-- // reserve 1 char for scrollbar column
+	}
+	if visW < 4 {
+		visW = 4
+	}
+
+	var sb strings.Builder
+	row := 0
 	for i := sl.offset; i < end; i++ {
 		item := sl.Items[i]
-
-		// Strip raw string length for truncation (items may have ANSI codes;
-		// use a generous visible-width approximation via lipgloss.Width).
-		visW := sl.Width - 3 // 3 chars for gutter + space
-		if visW < 4 {
-			visW = 4
-		}
 		raw := stripToWidth(item, visW)
 
 		var glyph string
 		switch {
-		case i == sl.Cursor && sl.Selected[i]:
-			glyph = cursorGlyph + " "
-			raw = sl.CursorStyle.Width(visW).Render(raw)
 		case i == sl.Cursor:
 			glyph = cursorGlyph + " "
 			raw = sl.CursorStyle.Width(visW).Render(raw)
@@ -168,29 +181,40 @@ func (sl *ScrollList) View() string {
 			raw = sl.SelectedStyle.Width(visW).Render(raw)
 		default:
 			glyph = normalGlyph + " "
-			// normal items keep their own styling
 		}
 
 		sb.WriteString(glyph + raw)
+		if needScrollbar && row < len(scrollBars) {
+			sb.WriteString(scrollBars[row])
+		}
 		if i < end-1 {
 			sb.WriteRune('\n')
 		}
+		row++
 	}
 
-	// Scroll indicator in the top-right corner when content overflows.
-	result := sb.String()
-	if len(sl.Items) > sl.Height {
-		pct := 0
-		if len(sl.Items) > 1 {
-			pct = sl.offset * 100 / (len(sl.Items) - 1)
+	return sb.String()
+}
+
+func buildScrollbar(height, total, offset int) []string {
+	bars := make([]string, height)
+	thumbSize := height * height / total
+	if thumbSize < 1 {
+		thumbSize = 1
+	}
+	maxOff := total - height
+	thumbPos := 0
+	if maxOff > 0 {
+		thumbPos = offset * (height - thumbSize) / maxOff
+	}
+	for i := range bars {
+		if i >= thumbPos && i < thumbPos+thumbSize {
+			bars[i] = scrollThumbStyle.Render("▌")
+		} else {
+			bars[i] = scrollTrackStyle.Render(" ")
 		}
-		indicator := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#585b70")).
-			Render(" " + progressBar(pct))
-		_ = indicator // returned as part of the last line — keep simple for now
 	}
-
-	return result
+	return bars
 }
 
 // stripToWidth removes trailing characters so the visible string fits within n
@@ -216,15 +240,6 @@ func stripToWidth(s string, n int) string {
 		return ""
 	}
 	return string(runes[:lo]) + "…"
-}
-
-func progressBar(pct int) string {
-	if pct <= 10 {
-		return "⊤"
-	} else if pct >= 90 {
-		return "⊥"
-	}
-	return "│"
 }
 
 // clampOffset ensures the cursor is visible within the scrolled window.

@@ -51,26 +51,26 @@ func NewHelpOverlay(width, height int) HelpOverlay {
 		Height: h,
 		overlayStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa")).
+			BorderForeground(lipgloss.Color("#4d9de0")).
 			Padding(1, 2).
 			Width(w).
 			Height(h),
 		titleStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#89b4fa")).
+			Foreground(lipgloss.Color("#4d9de0")).
 			Bold(true),
 		sectionStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#fab387")).
+			Foreground(lipgloss.Color("#e8835c")).
 			Bold(true),
 		keyStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#94e2d5")).
+			Foreground(lipgloss.Color("#2ec4b6")).
 			Bold(true).
 			Width(18),
 		descStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#cdd6f4")),
+			Foreground(lipgloss.Color("#d8d8ee")),
 		footerStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#585b70")),
+			Foreground(lipgloss.Color("#3d3d5c")),
 		scrollStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#45475a")),
+			Foreground(lipgloss.Color("#252538")),
 	}
 }
 

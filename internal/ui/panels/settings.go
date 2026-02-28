@@ -76,21 +76,21 @@ func (m *SettingsModel) buildStyles(width, height int) {
 
 	m.overlayStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#89b4fa")).
+		BorderForeground(lipgloss.Color("#4d9de0")).
 		Padding(1, 2).
 		Width(w).Height(h)
-	m.titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	m.sectionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true)
-	m.labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8")).Width(22)
-	m.valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4"))
-	m.maskedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7"))
-	m.unsetStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a"))
-	m.cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true)
-	m.enabledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
-	m.disabledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
-	m.hintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
-	m.editStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Bold(true)
-	m.footerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70"))
+	m.titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true)
+	m.sectionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Bold(true)
+	m.labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7878a0")).Width(22)
+	m.valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee"))
+	m.maskedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb"))
+	m.unsetStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#252538"))
+	m.cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true)
+	m.enabledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true)
+	m.disabledStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c"))
+	m.hintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c"))
+	m.editStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Bold(true)
+	m.footerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c"))
 }
 
 // LoadConfig populates fields from a Config value.

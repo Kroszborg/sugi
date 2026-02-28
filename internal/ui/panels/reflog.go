@@ -21,7 +21,7 @@ func NewReflogModel(width, height int) ReflogModel {
 	return ReflogModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -48,7 +48,7 @@ func (m *ReflogModel) MoveDown() { m.list.MoveDown() }
 // View renders the reflog panel.
 func (m *ReflogModel) View() string {
 	if len(m.entries) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No reflog entries")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No reflog entries")
 	}
 	return m.list.View()
 }
@@ -56,11 +56,11 @@ func (m *ReflogModel) View() string {
 func (m *ReflogModel) buildItems() []string {
 	items := make([]string, len(m.entries))
 	for i, e := range m.entries {
-		ref := lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(e.Ref)
-		hash := lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true).Render(e.ShortHash)
+		ref := lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(e.Ref)
+		hash := lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Bold(true).Render(e.ShortHash)
 		action := actionStyle(e.Action).Render(e.Action)
-		subject := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(e.Subject)
-		date := lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(relativeDate(e.Date))
+		subject := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(e.Subject)
+		date := lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(relativeDate(e.Date))
 		items[i] = fmt.Sprintf(" %s %s %s %s  %s", ref, hash, action, subject, date)
 	}
 	return items
@@ -69,17 +69,17 @@ func (m *ReflogModel) buildItems() []string {
 func actionStyle(action string) lipgloss.Style {
 	switch action {
 	case "commit", "commit (amend)", "commit (merge)", "commit (cherry-pick)":
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true)
 	case "checkout":
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0"))
 	case "reset":
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017"))
 	case "merge":
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb"))
 	case "rebase":
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c"))
 	default:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#7878a0"))
 	}
 }
 

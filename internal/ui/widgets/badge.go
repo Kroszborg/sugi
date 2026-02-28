@@ -8,10 +8,10 @@ import (
 // StatusBadge renders a colored single-character status badge for a file.
 func StatusBadge(fs git.FileStatus) string {
 	if fs.IsConflicted() {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Bold(true).Render("U")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Bold(true).Render("U")
 	}
 	if fs.IsUntracked() {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true).Render("?")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Bold(true).Render("?")
 	}
 
 	staged := stagedBadge(fs.Staged)
@@ -32,15 +32,15 @@ func StatusBadge(fs git.FileStatus) string {
 func stagedBadge(code git.StatusCode) string {
 	switch code {
 	case git.Modified:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Bold(true).Render("M")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Bold(true).Render("M")
 	case git.Added:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true).Render("A")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true).Render("A")
 	case git.Deleted:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Bold(true).Render("D")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Bold(true).Render("D")
 	case git.Renamed:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")).Bold(true).Render("R")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb")).Bold(true).Render("R")
 	case git.Copied:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#89dceb")).Bold(true).Render("C")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#7c6dfa")).Bold(true).Render("C")
 	}
 	return ""
 }
@@ -48,9 +48,9 @@ func stagedBadge(code git.StatusCode) string {
 func unstagedBadge(code git.StatusCode) string {
 	switch code {
 	case git.Modified:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Render("m")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Render("m")
 	case git.Deleted:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Render("d")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Render("d")
 	}
 	return ""
 }
@@ -58,7 +58,7 @@ func unstagedBadge(code git.StatusCode) string {
 // BranchBadge renders an indicator for a branch.
 func BranchBadge(isCurrent bool) string {
 	if isCurrent {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true).Render("*")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true).Render("*")
 	}
 	return " "
 }
@@ -70,10 +70,10 @@ func AheadBehindBadge(ahead, behind int) string {
 	}
 	s := ""
 	if ahead > 0 {
-		s += lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Render("↑" + itoa(ahead))
+		s += lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Render("↑" + itoa(ahead))
 	}
 	if behind > 0 {
-		s += lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Render("↓" + itoa(behind))
+		s += lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Render("↓" + itoa(behind))
 	}
 	return s
 }

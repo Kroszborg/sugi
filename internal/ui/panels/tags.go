@@ -25,7 +25,7 @@ func NewTagsModel(width, height int) TagsModel {
 	return TagsModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -82,7 +82,7 @@ func (m *TagsModel) UpdateModalInput(msg tea.Msg) tea.Cmd {
 // View renders the tags panel.
 func (m *TagsModel) View() string {
 	if len(m.tags) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No tags")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No tags")
 	}
 	return m.list.View()
 }
@@ -95,25 +95,25 @@ func (m *TagsModel) ModalView() string {
 func (m *TagsModel) buildItems() []string {
 	items := make([]string, len(m.tags))
 	for i, t := range m.tags {
-		hash := lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Render(t.ShortHash)
+		hash := lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Render(t.ShortHash)
 
 		date := ""
 		if !t.Date.IsZero() {
-			date = " " + lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(relativeDate(t.Date))
+			date = " " + lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(relativeDate(t.Date))
 		}
 
 		kind := ""
 		if t.IsAnnotated {
-			kind = lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Render(" ◆")
+			kind = lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Render(" ◆")
 		} else {
-			kind = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(" ○")
+			kind = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(" ○")
 		}
 
-		name := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Bold(true).Render(t.Name)
+		name := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Bold(true).Render(t.Name)
 
 		msg := ""
 		if t.Message != "" {
-			msg = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6adc8")).Render("  " + t.Message)
+			msg = lipgloss.NewStyle().Foreground(lipgloss.Color("#7878a0")).Render("  " + t.Message)
 		}
 
 		items[i] = fmt.Sprintf(" %s %s %s%s%s", kind, name, hash, date, msg)

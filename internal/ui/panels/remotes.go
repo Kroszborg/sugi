@@ -27,7 +27,7 @@ func NewRemotesModel(width, height int) RemotesModel {
 	return RemotesModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 	}
 }
 
@@ -103,7 +103,7 @@ func (m *RemotesModel) SetModalInputModel(ti textinput.Model) {
 // View renders the remotes panel.
 func (m *RemotesModel) View() string {
 	if len(m.remotes) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No remotes configured")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No remotes configured")
 	}
 	return m.list.View()
 }
@@ -120,17 +120,17 @@ func (m *RemotesModel) buildItems() []string {
 }
 
 func renderRemoteItem(r git.RemoteEntry) string {
-	name := lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true).Render(r.Name)
+	name := lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true).Render(r.Name)
 
 	url := r.FetchURL
 	if url == "" {
 		url = r.PushURL
 	}
-	urlStr := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(url)
+	urlStr := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(url)
 
 	pushStr := ""
 	if r.PushURL != "" && r.PushURL != r.FetchURL {
-		pushStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).
+		pushStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).
 			Render(fmt.Sprintf("  push: %s", r.PushURL))
 	}
 

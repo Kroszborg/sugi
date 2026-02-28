@@ -24,16 +24,16 @@ func NewPanel(title string, width, height int) Panel {
 		Height: height,
 		focusedStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa")).
+			BorderForeground(lipgloss.Color("#4d9de0")).
 			Width(width - 2).
 			Height(height - 2),
 		unfocusedStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#585b70")).
+			BorderForeground(lipgloss.Color("#3d3d5c")).
 			Width(width - 2).
 			Height(height - 2),
 		titleStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#89b4fa")).
+			Foreground(lipgloss.Color("#4d9de0")).
 			Bold(true).
 			Padding(0, 1),
 	}
@@ -54,11 +54,11 @@ func (p Panel) Render(content string) string {
 
 // RenderWithTitle renders a panel with a title in the top border.
 func (p Panel) RenderWithTitle(content string) string {
-	borderColor := lipgloss.Color("#585b70")
-	titleColor := lipgloss.Color("#a6adc8")
+	borderColor := lipgloss.Color("#3d3d5c")
+	titleColor := lipgloss.Color("#7878a0")
 	if p.Focused {
-		borderColor = lipgloss.Color("#89b4fa")
-		titleColor = lipgloss.Color("#89b4fa")
+		borderColor = lipgloss.Color("#4d9de0")
+		titleColor = lipgloss.Color("#4d9de0")
 	}
 
 	style := lipgloss.NewStyle().

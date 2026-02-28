@@ -76,7 +76,7 @@ func (m *StashModel) View() string {
 	}
 
 	sep := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#45475a")).
+		Foreground(lipgloss.Color("#252538")).
 		Render(fmt.Sprintf("─── diff preview %s", "─────────────────────"))
 
 	return listView + "\n" + sep + "\n" + m.diff.View()
@@ -87,14 +87,14 @@ func (m *StashModel) buildItems() []string {
 	for i, s := range m.stashes {
 		date := ""
 		if !s.Date.IsZero() {
-			date = lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render(relativeDate(s.Date))
+			date = lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render(relativeDate(s.Date))
 		}
 		branch := ""
 		if s.Branch != "" {
-			branch = lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Render(" [" + s.Branch + "]")
+			branch = lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Render(" [" + s.Branch + "]")
 		}
-		idx := lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true).Render(fmt.Sprintf("stash@{%d}", i))
-		msg := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(s.Message)
+		idx := lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true).Render(fmt.Sprintf("stash@{%d}", i))
+		msg := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(s.Message)
 		items[i] = fmt.Sprintf(" %s%s %s  %s", idx, branch, msg, date)
 	}
 	return items

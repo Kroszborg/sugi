@@ -48,23 +48,23 @@ func NewPRModel(width, height int) PRModel {
 	return PRModel{
 		Width:  width,
 		Height: height,
-		list:   widgets.NewScrollList(height-4, width-4),
+		list:   widgets.NewScrollList(height-3, width-4),
 
-		numberStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#89b4fa")).Bold(true),
-		titleStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		authorStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")),
-		dateStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		openStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true),
-		draftStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		mergedStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")).Bold(true),
-		closedStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
-		ciOKStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
-		ciFailStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")),
-		ciPendStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")),
-		reviewOKStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")),
-		reviewBadStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")),
-		emptyStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		detailStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
+		numberStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#4d9de0")).Bold(true),
+		titleStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
+		authorStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb")),
+		dateStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
+		openStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true),
+		draftStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
+		mergedStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb")).Bold(true),
+		closedStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")),
+		ciOKStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")),
+		ciFailStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")),
+		ciPendStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")),
+		reviewOKStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")),
+		reviewBadStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")),
+		emptyStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
+		detailStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
 	}
 }
 
@@ -263,11 +263,11 @@ func (m *PRModel) renderDetail(pr *forge.PullRequest) string {
 func CIBadge(result forge.CIResult) string {
 	switch result {
 	case forge.CISuccess:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Render("✓")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Render("✓")
 	case forge.CIFailure, forge.CIError:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f38ba8")).Render("✗")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#e05454")).Render("✗")
 	case forge.CIPending:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Render("⟳")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Render("⟳")
 	default:
 		return " "
 	}
@@ -276,7 +276,7 @@ func CIBadge(result forge.CIResult) string {
 // PRBadge renders a PR number badge for inline display (e.g. in branch list).
 func PRBadge(number int) string {
 	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#89b4fa")).
+		Foreground(lipgloss.Color("#4d9de0")).
 		Render(fmt.Sprintf("PR#%d", number))
 }
 

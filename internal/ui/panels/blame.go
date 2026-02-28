@@ -33,14 +33,14 @@ func NewBlameModel(width, height int) BlameModel {
 	return BlameModel{
 		Width:        width,
 		Height:       height,
-		cursorStyle:  lipgloss.NewStyle().Background(lipgloss.Color("#313244")).Foreground(lipgloss.Color("#cdd6f4")),
-		normalStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		hashStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Bold(true),
-		authorStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")),
-		dateStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
-		contentStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")),
-		dimStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#45475a")),
-		emptyStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")),
+		cursorStyle:  lipgloss.NewStyle().Background(lipgloss.Color("#1a1a2a")).Foreground(lipgloss.Color("#d8d8ee")),
+		normalStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
+		hashStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#e8835c")).Bold(true),
+		authorStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb")),
+		dateStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
+		contentStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")),
+		dimStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#252538")),
+		emptyStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")),
 	}
 }
 

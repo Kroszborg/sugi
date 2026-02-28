@@ -29,7 +29,7 @@ func NewCommitModel(width, height int) CommitModel {
 	return CommitModel{
 		Width:       width,
 		Height:      height,
-		list:        widgets.NewScrollList(height-4, width-4),
+		list:        widgets.NewScrollList(height-3, width-4),
 		ShowGraph:   false,
 		graphRender: widgets.NewGraphRenderer(),
 	}
@@ -121,10 +121,10 @@ func (m *CommitModel) PageDown() { m.list.PageDown() }
 // View renders the commits panel content.
 func (m *CommitModel) View() string {
 	if len(m.commits) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).Render("  No commits")
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).Render("  No commits")
 	}
 	if m.searchFilter != "" && len(m.filtered) == 0 {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#585b70")).
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3d3d5c")).
 			Render(fmt.Sprintf("  No commits matching %q", m.searchFilter))
 	}
 	return m.list.View()
@@ -149,7 +149,7 @@ func (m *CommitModel) buildItems() []string {
 
 func renderCommitItem(c git.Commit, width int) string {
 	hash := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#fab387")).
+		Foreground(lipgloss.Color("#e8835c")).
 		Bold(true).
 		Render(c.ShortHash)
 
@@ -158,16 +158,16 @@ func renderCommitItem(c git.Commit, width int) string {
 		// Skip HEAD ->
 		if strings.HasPrefix(ref, "HEAD -> ") {
 			ref = strings.TrimPrefix(ref, "HEAD -> ")
-			refs += lipgloss.NewStyle().Foreground(lipgloss.Color("#a6e3a1")).Bold(true).Render(" [" + ref + "]")
+			refs += lipgloss.NewStyle().Foreground(lipgloss.Color("#3ecf8e")).Bold(true).Render(" [" + ref + "]")
 		} else if strings.HasPrefix(ref, "tag: ") {
-			refs += lipgloss.NewStyle().Foreground(lipgloss.Color("#f9e2af")).Render(" [" + ref + "]")
+			refs += lipgloss.NewStyle().Foreground(lipgloss.Color("#d4a017")).Render(" [" + ref + "]")
 		} else {
-			refs += lipgloss.NewStyle().Foreground(lipgloss.Color("#cba6f7")).Render(" [" + ref + "]")
+			refs += lipgloss.NewStyle().Foreground(lipgloss.Color("#a87efb")).Render(" [" + ref + "]")
 		}
 	}
 
 	date := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#585b70")).
+		Foreground(lipgloss.Color("#3d3d5c")).
 		Render(relativeDate(c.Date))
 
 	// Calculate available subject width
@@ -183,7 +183,7 @@ func renderCommitItem(c git.Commit, width int) string {
 	if len(sub) > subjectW {
 		sub = sub[:subjectW-1] + "…"
 	}
-	subject := lipgloss.NewStyle().Foreground(lipgloss.Color("#cdd6f4")).Render(sub)
+	subject := lipgloss.NewStyle().Foreground(lipgloss.Color("#d8d8ee")).Render(sub)
 
 	return fmt.Sprintf(" %s %s%s  %s", hash, subject, refs, date)
 }
